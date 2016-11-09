@@ -1,0 +1,543 @@
+NSF2X : A Lotus Notes NSF to EML, MBOX and Outlook PST converter
+dbateman@free.fr
+
+Based on nlconverter (https://code.google.com/p/nlconverter/) by
+Hugues Bernard <hugues.bernard@gmail.com>
+
+Quick Start
+-----------
+   0. Unzip the downloaded package on a Windows machine
+   1. Make a copy of the *.nsf files you want to convert to a temporary location
+   2. Launch Lotus Notes
+   3. Optionally, but recommended, launch Outlook
+   4. Launch "nsf2x.exe"
+   5. Enter the Lotus Notes password
+   6. Press the "Open Session" to open the connection to Notes and Outlook
+   7. Select the output type: EML, MBOX or PST
+   8. Modify the conversion options as wanted
+   9. Enter the source path of the temporary location with the "*.nsf" files
+  10. Enter the destination path to contain the converted files
+  11. Press the "Convert" button to launch the conversion
+  12. Progress is displayed in the title bar, errors in the window
+  13. Enjoy
+
+WARNING
+-------
+NSF2X can read all the encrypted mails that your Notes ID gives you access to. It
+decrypts these mail in its output EML, and MBOX files, as NSF2X can't use the
+Notes encryption in the EML files. So if you care about the security of your mail
+archives, store them on encrypted disks after conversion. You've been warned.
+However, a mail that is encrypted in Notes can be re-encrypted with the users 
+certificate in the PST file, if you have their certificates.
+
+NSF2X is also relatively slow for conversion to PST files, as a shell command of 
+Outlook is run for each mail to display the EML files. So you'll be able to convert
+3000 to 5000 mails per hour on a reasonable laptop. So those 2GB NSF files of yours
+are going to take some time to convert to PST files !!! Writing to EML or MBOX is
+about 3 to 5 times faster 
+  
+Details
+-------
+
+   0. Unzip the downloaded package on a Windows machine
+  -----------------------------------------------------
+   Well if you're reading this then you've probably already done this. If you
+   haven't already guessed, this program relies on a number of Windows features,
+   notably the COM interface of Notes and Outlook as well as Outlook itself.
+   These being Windows only, no this program won't work under Linux.
+   
+   1. Make a copy of the *.nsf files you want to convert to a temporary location
+  ------------------------------------------------------------------------------
+   I make no guarantee that this program won't destroy your Lotus NSF archives,
+   every file on your computer or kill your cat. That being said, I've used it
+   for my needs without problems and so you too should be able to do so.
+
+   The process of converting to EML files will modify the NSF files. The reason
+   is that each message is converted to MIME within the NSF file even if it
+   wasn't initially coded in MIME within Lotus Notes. For this reason it is
+   better to make a copy of your NSF files and let NSF2X work on these copies.
+   By doing this you'll minimize the risk of loss of data
+   
+   This needs to be done before Lotus Notes is running to ensure that Lotus
+   doesn't prevent you from making a copy, as the archive is open in Notes.
+
+   2. Launch Lotus Notes
+  ----------------------
+   NSF2X relies on Lotus Notes to do the heavy lifting for the conversion to
+   EML files. NSF2X will try to use Lotus Notes even if you haven't launched it
+   so this step is optional, but recommended
+
+   3. Launch Outlook
+  ------------------
+   For the conversion to PST, Outlook is necessary. It isn't necessary for the
+   conversion to EML or MBOX. NSF2X will start Outlook the first time it needs
+   it, but if you have already started Outlook, NSF2X will load the EML files
+   for conversion to PST faster.
+
+   4. Launch "nsf2x.exe"
+  ---------------------
+   The file "nsf2x.exe" is the compiled version of the source code file
+   "nsf2x.py". The code is written in Python 2.6 compatible code and compiled
+   with the py2exe code so that you don't need python installed to run it.
+   Though you'll need Python if you alter the "nsf2x.py" code
+   
+   5. Enter the Lotus Notes password
+  ----------------------------------
+   So that NSF2X can have access to Lotus Notes it needs your Lotus Notes
+   password. Enter into the password box of NSF2X
+
+   6. Press the "Open Session" to open the connection to Notes and Outlook
+  ------------------------------------------------------------------------
+   Pressing this button opens the connection to Lotus Notes and to Outlook
+   via a Windows COM interface. At this point the password selection is 
+   deactivated, but the source and destination path entries are activated.
+   
+   7. Select the output type: EML, MBOX or PST
+  --------------------------------------------
+   NSF2X can convert to EML, MBOX or PST formats. For each NSF file found in
+   the source directory NSF2X does the following steps
+
+   EML :
+   .....
+   For each NSF a sub-directory "<DestPath>/<NSFFileBasename>" is created. 
+   where <NSFFileBasename> is the NSF file with the "*.nsf" termination
+   removed. Under these sub-directories, the folder hierarchy of the NSF file 
+   is recreated and each message of each folder is created in a separate 
+   EML file.
+
+   MBOX :
+   ......
+   There are two possibles means of treating the conversion of MBOX files
+   In the first case, for each NSF file an MBOX file is created in <DestPath>, 
+   with the ".nsf" termination replaced with ".mbox". Unfortunately the folder
+   hierarchy is thrown away in the created MBOX file, and a flat hierarchy is 
+   used. The advantage is only a single MBOX file is created for each NSF file.
+   
+   In the second case a folder hierarchy is created with an MBOX representing
+   each NSF sub-directory, thus retaining the folder hierarchy. The downside
+   is a large number of MBOX files is potentially created.
+
+   PST :
+   .....
+   For each NSF file a PST file is created in <DestPath>, with the ".nsf"
+   termination replaced with ".pst". The folder hierarchy in the NSF file is
+   recreated in the PST file. Each message from the NSF file is saved to a
+   temporary file in <DestPath> and then opened by Outlook and moved to the
+   correct folder. You might see the EML file opening in outlook during this
+   process for each message. At the end of the process the PST file is left
+   open within Outlook. You can either close these PST files before moving
+   them to their final location and reopen them in Outlook or create them
+   directly in their final location. If you run NSF2X twice with the same
+   source and destination, the messages in the NSF file will be copied to
+   the PST files twice.
+
+   8. Modify the conversion options as wanted
+  -------------------------------------------   
+   Using the "Options" button the user can modify two parameters of NSF2X.
+   The options that are be modified are discussed below
+   
+   Use different MBOXes for each sub-folder :
+   ..........................................
+   This option only concerns the conversion to MBOX format. The possible 
+   options are
+   
+   No : A single MBOX file will be created and the sub-directory hierarchy 
+   will be discarded
+
+   YES : The sub-directory hierarchy is created using Windows folders and
+   a separate MBOX file will be created for each sub-directory
+   
+   Treatment of missing encryption certificates for PST conversion :
+   .................................................................
+   This option only concerns the conversion to PST format. The possible
+   options are
+   
+   Disable All Encryption : The encryption status of all Notes mails is
+   ignored and all mail is saved to the PST file without encryption
+
+   Ask User : In the case of a recipient with a missing certificate the user
+   will be prompted for the treatment of the message. For long running
+   conversions, this can be very inconvenient, but it gives the best results
+   
+   Remove Recipient : In case of a recipient with a missing certificate the
+   recipient is removed from the mail and the mail is saved in encrypted form.
+   If the sender certificate is missing, the mail is not encrypted.
+   
+   Skip : If the sender or a recipient is missing a certificate the mail is 
+   saved non encrypted
+   
+   Use MAPI for PST conversion :
+   .............................
+   This option only concerns the conversion to PST format. The possible
+   options are
+   
+   No : In this case a call to OUTLOOK.EXE is made to import the EML file.
+   The problem is that NSF2X then has to identify the open window to allow
+   importation and this can go wrong. Also there will be a flashing window
+   on the screen for each EML message imported, that makes using the machine
+   at the same tile as running NSF2X nearly impossible
+   
+   Yes : Using the MAPI interface exposes a function to directly import the
+   EML files into the Outlook message store. This gets around the preceding
+   problems.
+   
+   9. Enter the source path of the temporary location with the "*.nsf" files
+  --------------------------------------------------------------------------
+   Clicking on the source directory entry will open a dialog to select a
+   source directory, with the NSF files.
+
+  10. Enter the destination path to contain the converted files
+  -------------------------------------------------------------
+   Clicking on the destination directory will open a dialog to select a
+   destination directory
+   
+  11. Press the "Convert" button to launch the conversion
+  -------------------------------------------------------
+   The conversion process is launch and the UI is disabled, leaving only the
+   option to "Stop" the process
+   
+  12. Progress is displayed in the title bar, errors in the window
+  ----------------------------------------------------------------
+   Error messages, information and warnings are printed in the window of
+   NSF2X. These will be useful to debug any problems you have.
+   
+  13. Enjoy
+  ---------
+   If you're converting to PST and not using the MAPI interface the continually 
+   flashing EML messages on the screen will stop you from working with your
+   computer. Doing so and loosing Focus on the EML message windows might cause
+   an error in the importation. You're better off going and getting a coffee or
+   if your NSF files are large, going to bed. You can however lock the screen without
+   interrupting the conversion. Use the default MAPI conversion to avoid this.
+
+Development
+-----------
+
+   Prerequisites
+   -------------
+   1. Install python 2.x where x is at least 6 or 3.y where y is at least 4. I 
+   personally used Python 2.7 for the development (http://portablepython.com/) 
+   but apparently this is no longer maintained and so switched to WinPython
+   (http://winpython.sf.net) version 3.4. The code should still work with 
+   python 2.7 but I'd recommend using at least 3.4
+   
+   Note that if you Notes client is 32bit as is mine you'll need to use the 32bit 
+   versions of python.
+
+   2. Install pywin extensions for Windows from
+   https://sourceforge.net/projects/pywin32/
+
+   The files to download are in
+   https://sourceforge.net/projects/pywin32/files/pywin32/
+
+   Select the latest build and download and install the version adapted to
+   your version of Python. Yes WinPython already has pywin32 installed, but
+   the version in the WinPython distributions in built without the MAPI
+   interface that will be used.
+
+   3. Install the py2exe extension to allow the creation of nsf2x.exe
+   
+   For Python 2.7 the version to use is at 
+   
+   http://www.py2exe.org
+   
+   while for Python 3.x it is found at 
+ 
+   https://pypi.python.org/pypi/py2exe/
+   
+   Build
+   -----
+   Open a console and run 
+         SET PATH=%PATH%;c:\Python
+         python create_exe.py
+
+   The sub-directory 'dist' now contains the binary distribution, and the
+   file "nsf2x-X.X.X.zip" contains a zip of this directory for distribution.
+   
+   create_exe.py attempts to include all DLLs that are necessary of the use of
+   NSF2X. However, certain DLLs need the license to redistribute them from
+   Microsoft, typically included in VC++. In particular the python library 
+   mfc*.dll and the Microsoft redistributable C DLL msvcr*.dll. Make sure
+   you have the license to distribute these files
+   
+   create_exe.py will attempt to copy these to the directory, but might fail. 
+   If they are absent then you'll need to copy them to the dist directory. 
+   This is complicated by the fact the several versions of these DLLs might be 
+   present on your machine. You need the ones that your version of Python use.
+   If the mfc*.dll and msvcr*.dll were present you can distribute the 
+   created zip file directly, otherwise after copying the files, you'll
+   need to rezip the "dist" directory for distribution.
+
+   Creation of EML Files
+   ---------------------
+   By converting all messages to MIME before writing the EML files we ensure
+   that the formatting of the Lotus RichText is respected and the messages can
+   be transferred as close as possible to the original formatting.
+
+   Lotus Notes supplies the ConvertMime method to convert messages to MIME.
+   However, Lotus in their wisdom decided not to make ConvertMIME available
+   in the COM interface, making it hard but not impossible to use. Basically
+   to get the same functionality the C DLL of Lotus can be "abused" to
+   recreate the functionality of ConvertMIME in COM. I didn't find a way
+   to get the notesID of the created MIME message and so was required to
+   resave the MIME message back to the NSF file, before reopening it in the
+   Lotus COM interface to be used. This means that the process of converting
+   to MIME will modify the NSF file.
+   
+   It is possible to Copy the NotesDocument and convert to MIME in this copy
+   and then delete it after saving. However, when using the MAPI interface the
+   call to win32com.mapi.mapi.MAPIInitialize has the weird side effect of making
+   all calls to MIMEConvertCDParts in Notes to return a "File does not exist (259)"
+   error. So I has to pre-convert to MIME and restore in the NSF file before 
+   converting to PST. Very wierd and probably an indication of a nasty buffer
+   overflow somewhere.
+   
+   If the content of a mail is encrypted, it must first be decrypted before
+   conversion to MIME. However as the Lotus Notes encryption is proprietary the
+   encryption can't easily be converted to SMIME and so the encryption is lost
+   when creating the EML files.
+   
+   Only the mail is converted to EML files. All of the calendar events in the
+   NSF file are ignored. The mail is stored as a list of "Views" that can be
+   obtained with the code
+   
+   import win32com.client
+   session = win32com.client.Dispatch(r'Lotus.NotesSession')
+   session.Initialize(password)
+   session.ConvertMime = False
+   database = session.GetDatabase("", NSFPath + NSFFile)
+   dBViews = database.Views
+   
+   The "Views" that interest us are either a folder, signalled by dbView[n].isFolder,
+   or has a name "$Sent", "$Inbox", "$Draft". The "$Inbox" view is also a folder
+   and we don't transfer the "$Draft" files, so only the "$Sent" view needs
+   special treatment.
+
+   Creation of PST Files
+   --------------------
+   The Windows COM interface doesn't allow certain fields of MailItem objects
+   to be written. Notably the ReceivedTime, and the status of whether a message
+   is sent or not. So the EML files can't be directly copied to an Outlook
+   MailItem. 
+   
+   I used two methods to import the EML files :
+   
+   Using Outlook to import EML files
+   .................................
+   
+
+   Outlook can  open EML files directly from the Windows shell, but
+   can't do it from the COM interface. Therefore, for each EML file I
+   launch an Outlook sub-process with the "/eml" command line flag to ensure
+   that the file is interpreted as EML. As the loaded file will then be in
+   the Active windows of Outlook, NSF2X can grab a MailItem handle to the
+   opened EML file, and move it to the correct place. This also means the
+   temporary EML file will briefly flash on the screen.
+   
+   We can get the opened a Windows "Inspector" to this EML message with the 
+   code
+   
+   import win32com.client
+   application = win32com.client.Dispatch(r'Outlook.Application')
+   inspector = application.ActiveInspector
+   
+   However, open dialog boxes, or menus that appear when hovering the mouse
+   over these message are also "Inspector" objects and so using the 
+   ActiveInpector property can result in the pointer to the wrong object
+   being given. The solution is to iterate of all of the Outlook Inspectors
+   and find the one we want. For example a semi complete solution is to 
+   do
+   
+   import win32com.client
+   application = win32com.client.Dispatch(r'Outlook.Application')
+   doc = dBViews[CurrentView].GetFirstDocument()
+   while doc != None :
+       ...   
+       writeMIMEFile(doc, eml)
+       
+       subprocess.call([PathToOutlook, "/eml", eml])
+
+       m = None
+       for inspector in application.Inspectors :
+           _m = win32com.client.CastTo (inspector.CurrentItem, "_MailItem")
+           if SameMessage (doc, _m) :
+               m = _m
+               break
+       if m == None :
+           raise IOError("Can't find open EML message from Outlook")
+       else :
+          m.move(DestPSTFolder)
+          m.close (1)   # Flag 1 -> copy is not saved in the default Inbox
+       
+       ...
+       doc = dBViews[CurrentView].GetNextDocument(doc)
+
+   The "SameMessage" function tests a number of fields of the current Lotus
+   document against the opened EML file to see that they are the same. I used
+   the Sender and SentOn fields as accents in the Subject field caused some
+   issues.
+
+   Using Extended MAPI IConverter function
+   .......................................
+   
+   The package "Redemption" can apparently load an EML file directly to a 
+   MailItem, but as it a commercial product, using it would prevent 
+   distribution of this package.
+   
+   The solution is the IConverter:MIMEToMAPI function, though this requires
+   the use of the extended MAPI interface. The code at 
+   
+   http://www.codeproject.com/internet/CMapiEx.asp
+
+   was used to inspire the extended MAPI interface to the win32com.mapi 
+   module and the MIMEToMAPI documentation at
+   
+   https://msdn.microsoft.com/fr-fr/library/office/ff960604.aspx
+   
+   was used.
+   
+   Re-encrypting mail in PST
+   ........................
+   
+   Mail that is identified as encrypted in Lotus Notes is re-encrypted in
+   Outlook with the code
+   
+   enc = doc.GetFirstItem("Encrypt")
+   if enc != None and enc.Text == '1' : 
+       m1.PropertyAccessor.SetProperty("http://schemas.microsoft.com/mapi/proptag/0x6E010003", 1)
+       
+   This must occur before the "m1.move(DestPSTFolder)" or "m1.Save()" must
+   be called to allow the encryption to be performed.
+   
+   The problem with the encryption is that it relies on the users Outlook
+   address book have the certificates for all the senders et recipients of 
+   encrypted mails. These certificates can be in the form of a local contact
+   or the "Global Address List" of the Exchange server. Otherwise a NSF2X
+   will cause Outlook to present the user is a dialog asking them how to
+   treat the missing certificate, with no way to automate the selection of
+   the correct option, as NSF2X is blocked by the dialog.
+   
+   This is annoying as the main use case for NSF2X is importing mail archives
+   that might be relatively old, and with the number of people arriving and
+   departing the company, the encrypted messages risks to have one or more
+   users with a missing certificates. I see many ways of treating this issue
+   in order of preference as follows
+   
+       0/ Just let Outlook ask the user want to do despite that fact that this
+       makes conversion process stop.
+       
+       1/ Do encrypt any mail. This is easy to do as we can just ignore the 
+       Notes encryption.
+       
+       2/ Find a means of getting Outlook to accept a missing certificate and
+       encrypt the mail anyway. This is the best option I can see, as the mail is
+       available to the owner of the NSF2X archive and the list of recipients is
+       not changed. However Microsoft seems to have not thought about giving an
+       option to change this behaviour, with the closest I found being the 
+       SupressNameCheck registry option that allows the SMTP address of
+       certificate to be mismatched with the actual address used, but doesn't
+       help for actual missing certificates.
+       
+       3/ Check the sender and recipients of the mail in the address book before
+       sending and
+       
+       3a/ Create a dummy X509 self-signed certificate and place it in the users 
+       local contacts, and remove it when NSF2X completes. There are many issues
+       with this solution.
+       
+       - The X509Enrollment web factory of Microsoft only allows local
+       administrators run the X509Enrollment.CX509PrivateKey.Create() method.
+       So Microsoft's X509 can only be used if the user is Admin. I frankly 
+       see no reason for this restriction as the certificate we are trying to
+       create is never enrolled in the local key store, which is the real 
+       operation that is risky -->  OpenSSL can be used to create a *.p7c file 
+       for the SMTP address in any case
+       - The "Global Address List" seem to take precedence for the domains 
+       managed by the Exchange server. As the missing certificates are likely
+       to be for people that have quit your company, this means that in most
+       cases the created certificates are never seen in any case
+       
+        class_factory = win32com.client.Dispatch( "X509Enrollment.CX509EnrollmentWebClassFactory")
+        enrollment = class_factory.CreateObject ("X509Enrollment.CX509Enrollment")
+        
+            # See https://social.msdn.microsoft.com/Forums/vstudio/en-US/79cd717d-b3a8-4ec8-8191-60b8d06a0d50/c-programmatically-add-certificate-to-outlook-contacts?forum=vsto
+            # and https://github.com/ShaneMcC/websitepanel/blob/master/WebsitePanel/Trunk/Sources/WebsitePanel.Providers.Web.IIS70/SSL/SSLModuleService.cs
+            # for ideas of what goes in between 
+        
+        cert = enrollment.createRequest(1).decode('base64')
+       
+        outlook = win32com.client.Dispatch(r'Outlook.Application')
+        contact = outlook.CreateItem (2) # olContactItem
+        contact.Email1Address = email
+        contact.Title ="NSF2X TOBERM"
+        cert = win32com.client.VARIANT (pythoncom.VT_ARRAY | pythoncom.VT_UI1, memoryview(cert).tolist())
+        contact.PropertyAccessor.SetProperty("http://schemas.microsoft.com/mapi/proptag/0x3A701102", (cert, ))
+       
+       3b/ Remove the recipients with missing certificates from the mail. The
+       problem here is that you no longer know exactly who received the mail. 
+       Also how do you treat the case of a sender with a missing certificate
+       
+       3c/ Don't encrypt mails that have a sender or recipient with a missing 
+       certificate. The disadvantage is clearly that some confidential mails 
+       might no longer be encrypted
+   
+   Given restriction of Outlook, only the solution 0/, 1/, 3b/ and 3c/ seem viable. 
+   The best solution depends on the user 
+   
+   Creation of MBOX files
+   ----------------------
+   MBOX files don't include a folder structure and so it is impossible to
+   create the NSF Folder structure within a single MBOX file. So the solution
+   (used in Thunderbird by the way) is to create and MBOX file per
+   sub-directory
+   
+   The messages of an MBOX file are recognized by the fact they start with
+   "\nFrom". That is each new message is separated by a newline character
+   and the From field is the first field of the header. The EML files are
+   written with the From field first to simplify this. As "\nFrom" might
+   appear in a real message, the use of MIME ensures that these uses of
+   "\nFrom" won't be incorrectly interpreted.
+
+See also
+--------
+Code based on nlconverter (https://code.google.com/p/nlconverter/) by
+Hugues Bernard <hugues.bernard@gmail.com>. Though there is so little of
+his code left its probably not necessary to treat my program as a derived
+work. Basically all that is left is the Tkinter UI which is much the same. 
+So as to not have to rework the UI, however I treat this code as derived.
+   
+Another source of inspiration was
+
+http://www.bobzblog.com/tuxedoguy.nsf/dx/calling-notes-capi-from-cvisual-studio
+
+and 
+
+http://www.bobzblog.com/tuxedoguy.nsf/dx/geek-o-terica-16-easy-conversion-of-notes-documents-to-mime-format-part-2
+
+though the code here was a bit naive and didn't treat a hierarchy of 
+embedded MIME objects correctly. This source did however give the manner
+of abusing the C DLL nnotes.dll so as to recreate the MIMEConvert 
+functionality.
+   
+Copyright
+---------
+
+As a derivative program it inherits the same license (i.e. GPL v2)
+
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+
+# Copyright (C) 2016 Free Software Foundation
+# Author : Hugues Bernard <hugues.bernard@gmail.com>
+# Author : David Bateman <dbateman@free.fr>
