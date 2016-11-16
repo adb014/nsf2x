@@ -149,7 +149,7 @@ Details
    
    Treatment of encrypted Notes messages :
    .......................................
-   This option only concerns all conversion types.
+   This option concerns all conversion types. The possible options are
    
    None : The encryption status of all Notes mails is ignored and all mail is 
    saved without encryption
@@ -157,7 +157,7 @@ Details
    RC2 40bit : Encrypt with the algorithm RC2-CBC with 40 bit. This algorithm
    is quite weak, but very portable. If you can avoid it you shouldn't use it
    
-   3DES 168bit : Encrypt with DES EDE3 CBC or Triple DES with 168 bits. SOme
+   3DES 168bit : Encrypt with DES EDE3 CBC or Triple DES with 168 bits. Some
    people consider this encryption as being fragile, but it offers a compromise
    of security and compatibility 
    
@@ -172,20 +172,19 @@ Details
    read the encrypted mails. This should not be the case for Outlook on the
    same machine.
 
-   Use MAPI for PST conversion :
-   .............................
-   This option only concerns the conversion to PST format. The possible
-   options are
+   Error logging level
+   ...................
+   This option concerns all conversion types. The possible options are
    
-   No : In this case a call to OUTLOOK.EXE is made to import the EML file.
-   The problem is that NSF2X then has to identify the open window to allow
-   importation and this can go wrong. Also there will be a flashing window
-   on the screen for each EML message imported, that makes using the machine
-   at the same tile as running NSF2X nearly impossible
+   Normal : Only display messages that are used show the progress of NSF2X
    
-   Yes : Using the MAPI interface exposes a function to directly import the
-   EML files into the Outlook message store. This gets around the preceding
-   problems.
+   Error : As well as the messages for the progress of NSF2X, display error
+   messages
+   
+   Warning : As well as the normal and error messages, display warnings for
+   NSF2X
+   
+   Information : Display all messages, can be rather verbose
    
    9. Enter the source path of the temporary location with the "*.nsf" files
   --------------------------------------------------------------------------

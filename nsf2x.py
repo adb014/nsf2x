@@ -305,7 +305,7 @@ class Gui(tkinter.Frame):
         scrollX.pack(side=tkinter.BOTTOM,expand=tkinter.NO,fill=tkinter.X)
 
         self.messageWidget.pack(side=tkinter.RIGHT,expand=tkinter.YES,fill=tkinter.BOTH)
-        self.log(ErrorLevel.NORMAL, "Lotus Notes NSF file to EML, MBOX and PST file converter.")
+        self.log(ErrorLevel.NORMAL, "Lotus Notes NSF file to EML, MBOX and PST file  file converter.")
         self.log(ErrorLevel.NORMAL, "Contact dbateman@free.fr for more information.\n")
                         
     def openSource(self):
