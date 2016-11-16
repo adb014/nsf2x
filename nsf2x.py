@@ -24,6 +24,7 @@ import time
 import datetime
 import codecs
 import os
+import io
 import ctypes
 import subprocess
 import traceback
@@ -31,6 +32,8 @@ import tempfile
 import win32com.client #NB : Calls to COM are starting with an uppercase
 import win32com.mapi.mapi
 import win32com.mapi.mapitags
+import win32crypt
+import win32cryptcon
 
 try :
     # Python 3.x
@@ -60,13 +63,13 @@ class Format :
     EML, MBOX, PST = list(range (3))
     
 class EncryptionType :
-    NONE, ASK, REMOVE, SKIP = list (range (4))
+    NONE, RC2CBC, DES, AES128, AES256 = list (range (5))
     
 class SubdirectoryMBOX :
     NO, YES = list(range (2))
-
-class UsingMAPI :
-    NO, YES = list(range (2))
+    
+class ErrorLevel :
+    NORMAL, ERROR, WARN, INFO = list(range(4))
     
 class NotesEntries(object) :
     OPEN_RAW_RFC822_TEXT = ctypes.c_uint32(0x01000000)
@@ -246,16 +249,18 @@ class Gui(tkinter.Frame):
         self.NotesEntries = None
         self.running = False
         self.dialog = None
+        self.certificate = None
+        self.hCryptoProv = None
         
         # Initialize the default values of the Radio buttons
         self.Format = tkinter.IntVar()
         self.Format.set(Format.EML)
         self.Encrypt = tkinter.IntVar()
-        self.Encrypt.set(EncryptionType.SKIP)
+        self.Encrypt.set(EncryptionType.DES)
         self.MBOXType = tkinter.IntVar()
         self.MBOXType.set(SubdirectoryMBOX.YES)
-        self.UseMAPI = tkinter.IntVar()
-        self.UseMAPI.set(UsingMAPI.YES)
+        self.ErrorLevel = tkinter.IntVar()
+        self.ErrorLevel.set(ErrorLevel.ERROR)
         
         #Source chooser
         self.chooseNsfButton = tkinter.Button(self.master, text="Select Directory of SOURCE nsf files", command= self.openSource, relief =tkinter.GROOVE, state = tkinter.DISABLED)
@@ -300,8 +305,8 @@ class Gui(tkinter.Frame):
         scrollX.pack(side=tkinter.BOTTOM,expand=tkinter.NO,fill=tkinter.X)
 
         self.messageWidget.pack(side=tkinter.RIGHT,expand=tkinter.YES,fill=tkinter.BOTH)
-        self.log("INFO : Lotus Notes NSF file to EML file converter.")
-        self.log("INFO : Contact David.Bateman@edf.fr for more information.\n")
+        self.log(ErrorLevel.NORMAL, "Lotus Notes NSF file to EML file converter.")
+        self.log(ErrorLevel.NORMAL, "Contact David.Bateman@edf.fr for more information.\n")
                         
     def openSource(self):
         dirname = self.tk.call('tk_chooseDirectory','-initialdir',self.nsfPath,'-mustexist',True)
@@ -326,13 +331,13 @@ class Gui(tkinter.Frame):
         if self.Lotus != None :           
             if self.Outlook != None :
                 self.checked = True
-                self.log("INFO : Connection to Notes and Outlook established")
+                self.log(ErrorLevel.NORMAL, "Connection to Notes and Outlook established\n")
             else :
                 self.unchecked()
-                self.log("ERROR : Check that Outlook is running")
+                self.log(ErrorLevel.ERROR, "Check that Outlook is running\n")
         else :
             self.unchecked()
-            self.log("ERROR : Check the Notes password")
+            self.log(ErrorLevel.ERROR, "Check the Notes password\n")
         return self.checked
         
     def unchecked(self):
@@ -420,32 +425,41 @@ class Gui(tkinter.Frame):
         R2 = tkinter.Radiobutton(self.dialog, text="Yes", variable=self.MBOXType, value=SubdirectoryMBOX.YES)
         R2.grid(row=2, column=3, columnspan=2, sticky=tkinter.E+tkinter.W)
         
-        L2 = tkinter.Label (self.dialog, text="Treatment of missing encryption certificates for PST conversion :")
+        L2 = tkinter.Label (self.dialog, text="Re-encryption of encrypted Notes messages :")
         L2.grid(row=3, column=1, columnspan=4, sticky=tkinter.W)
         
-        R3 = tkinter.Radiobutton(self.dialog, text="Disable All Encryption", variable=self.Encrypt, value=EncryptionType.NONE)
+        R3 = tkinter.Radiobutton(self.dialog, text="None", variable=self.Encrypt, value=EncryptionType.NONE)
         R3.grid(row=4, column=1, sticky=tkinter.E+tkinter.W)
 
-        R4 = tkinter.Radiobutton(self.dialog, text="Ask User", variable=self.Encrypt, value=EncryptionType.ASK)
+        R4 = tkinter.Radiobutton(self.dialog, text="RC2 40bit", variable=self.Encrypt, value=EncryptionType.RC2CBC)
         R4.grid(row=4, column=2, sticky=tkinter.E+tkinter.W)
         
-        R5 = tkinter.Radiobutton(self.dialog, text="Remove Recipient", variable=self.Encrypt, value=EncryptionType.REMOVE)
-        R5.grid(row=4, column=3, sticky=tkinter.E+tkinter.W)
-
-        R6 = tkinter.Radiobutton(self.dialog, text="Skip Encryption", variable=self.Encrypt, value=EncryptionType.SKIP)
-        R6.grid(row=4, column=4, sticky=tkinter.E+tkinter.W)
+        R5 = tkinter.Radiobutton(self.dialog, text="3DES 168bit", variable=self.Encrypt, value=EncryptionType.DES)
+        R5.grid(row=4, column=3, columnspan = 2, sticky=tkinter.E+tkinter.W)
         
-        L3 = tkinter.Label (self.dialog, text="Use MAPI for PST conversion :")
-        L3.grid(row=5, column=1, columnspan=4, sticky=tkinter.W)
-
-        R1 = tkinter.Radiobutton(self.dialog, text="No (Old, buggy, slow)", variable=self.UseMAPI, value=UsingMAPI.NO)
-        R1.grid(row=6, column=1, columnspan=2, sticky=tkinter.E+tkinter.W)
+        R6 = tkinter.Radiobutton(self.dialog, text="AES 128bit", variable=self.Encrypt, value=EncryptionType.AES128)
+        R6.grid(row=5, column=1, columnspan = 2, sticky=tkinter.E+tkinter.W)      
         
-        R2 = tkinter.Radiobutton(self.dialog, text="Yes", variable=self.UseMAPI, value=UsingMAPI.YES)
-        R2.grid(row=6, column=3, columnspan=2, sticky=tkinter.E+tkinter.W)
+        R7 = tkinter.Radiobutton(self.dialog, text="AES 256bit", variable=self.Encrypt, value=EncryptionType.AES256)
+        R7.grid(row=5, column=3, columnspan = 2, sticky=tkinter.E+tkinter.W)
+        
+        L3 = tkinter.Label (self.dialog, text="Error logging level :")
+        L3.grid(row=6, column=1, columnspan=4, sticky=tkinter.W)
+
+        R7 = tkinter.Radiobutton(self.dialog, text="Normal", variable=self.ErrorLevel, value=ErrorLevel.NORMAL)
+        R7.grid(row=7, column=1, sticky=tkinter.E+tkinter.W)
+        
+        R8 = tkinter.Radiobutton(self.dialog, text="Error", variable=self.ErrorLevel, value=ErrorLevel.ERROR)
+        R8.grid(row=7, column=2, sticky=tkinter.E+tkinter.W)
+
+        R9 = tkinter.Radiobutton(self.dialog, text="Warning", variable=self.ErrorLevel, value=ErrorLevel.WARN)
+        R9.grid(row=7, column=3, sticky=tkinter.E+tkinter.W)
+        
+        R10 = tkinter.Radiobutton(self.dialog, text="Information", variable=self.ErrorLevel, value=ErrorLevel.INFO)
+        R10.grid(row=7, column=4, sticky=tkinter.E+tkinter.W)
         
         B1 = tkinter.Button(self.dialog, text="Close", command=self.closeOptions, relief=tkinter.GROOVE)
-        B1.grid(row=7,column=2, columnspan=2, sticky=tkinter.E+tkinter.W)
+        B1.grid(row=8,column=2, columnspan=2, sticky=tkinter.E+tkinter.W)
         
         self.dialog.focus_force ()
  
@@ -459,7 +473,7 @@ class Gui(tkinter.Frame):
             if self.running :
                 self.running = False;
                 self.configStop (False)
-                self.log("INFO : Waiting for sub processes to terminate")                
+                self.log(ErrorLevel.NORMAL, "Waiting for sub processes to terminate")                
             else :
                 self.running = True;                
                 self.configStop()
@@ -474,8 +488,8 @@ class Gui(tkinter.Frame):
                 self.Lotus.Initialize(self.entryPassword.get().rstrip())
                 self.Lotus.ConvertMime = False
             except Exception as ex:
-                self.log("ERROR : Error connecting to Lotus !")
-                self.log("ERROR : Exception %s :" % ex)
+                self.log(ErrorLevel.ERROR, "Error connecting to Lotus !")
+                self.log(ErrorLevel.ERROR, "Exception %s :" % ex)
                 # Try to force loading of Notes
                 for p in notesDllPathList :
                     fp = os.path.join(p, 'nlsxbe.dll')
@@ -486,10 +500,10 @@ class Gui(tkinter.Frame):
             try :
                 self.Outlook = win32com.client.Dispatch(r'Outlook.Application')
                 self.opath = OutlookPath()
-                self.log("INFO : Path to Outlook : %s" % self.opath)
+                self.log(ErrorLevel.NORMAL, "Path to Outlook : %s" % self.opath)
             except Exception as ex:
-                self.log("ERROR : Could not connect to Outlook !")
-                self.log("ERROR : Exception %s :" % ex)
+                self.log(ErrorLevel.ERROR, "Could not connect to Outlook !")
+                self.log(ErrorLevel.ERROR, "Exception %s :" % ex)
                 self.Outlook = None
                 
             self.check()
@@ -498,9 +512,9 @@ class Gui(tkinter.Frame):
 
     def doConvertDirectory(self):
         tl = self.winfo_toplevel()
-        self.log("INFO : Starting Convert : %s " % datetime.datetime.now())
+        self.log(ErrorLevel.NORMAL, "Starting Convert : %s " % datetime.datetime.now())
         if self.Format.get() == Format.MBOX  and self.MBOXType.get() == SubdirectoryMBOX.NO :
-            self.log("WARN : The MBOX file will not have the directory hierarchies present in NSF file")
+            self.log(ErrorLevel.WARN, "The MBOX file will not have the directory hierarchies present in NSF file")
 
         for src in os.listdir(self.nsfPath) :
             if not self.running :
@@ -512,11 +526,11 @@ class Gui(tkinter.Frame):
                 try :
                     self.realConvert(src, dest)
                 except Exception as ex:
-                    self.log("ERROR : Error converting database %s" % src)
-                    self.log("ERROR : Exception %s :" % ex)
-                    self.log("ERROR : %s" % traceback.format_exc())
+                    self.log(ErrorLevel.ERROR, "Error converting database %s" % src)
+                    self.log(ErrorLevel.ERROR, "Exception %s :" % ex)
+                    self.log(ErrorLevel.ERROR, "%s" % traceback.format_exc())
             
-        self.log("INFO : End of convert : %s " % datetime.datetime.now())
+        self.log(ErrorLevel.NORMAL, "End of convert : %s\n" % datetime.datetime.now())
         tl.title("Lotus Notes Converter")
         self.update()
         self.running = False;
@@ -530,6 +544,8 @@ class Gui(tkinter.Frame):
         tl = self.winfo_toplevel()
 
         path = os.path.join(self.nsfPath,src)
+        self.log(ErrorLevel.NORMAL, "Converting : %s " % path)        
+
         try :
             if self.Lotus != None :
                 dBNotes = self.Lotus.GetDatabase("", path)
@@ -538,109 +554,28 @@ class Gui(tkinter.Frame):
             else :
                  raise ValueError('Empty Lotus session')       
         except Exception as ex:
-            self.log("ERROR : Error connecting to Lotus !")
-            self.log("ERROR : Exception %s :" % ex)
+            self.log(ErrorLevel.ERROR, "Error connecting to Lotus !")
+            self.log(ErrorLevel.ERROR, "Exception %s :" % ex)
             return False
 
         stat = self.NotesEntries.NSFDbOpen(path)
         if stat != 0 :
-            raise ValueError('ERROR : Can not open Lotus database %s with C API (ErrorID %d)' % (path, stat))   
+            raise ValueError('ERROR : Can not open Lotus database %s with C API (ErrorID %d)' % (path, stat))
             
-        # Open le MBOX
-        f = None
-        ns = None
-        mbox = None
-        pst = None
-        rootFolder = None
-
-        if self.Format.get() == Format.MBOX and self.MBOXType.get() == SubdirectoryMBOX.NO :
-            mbox = os.path.join(self.destPath, (dest + ".mbox"))
-            self.log("INFO : Opening MBOX file - %s" % mbox)
-            f = open (mbox, "wb")
-        elif self.Format.get() == Format.PST :
-            pst = os.path.join(self.destPath, (dest + ".pst"))
-            ns = self.Outlook.GetNamespace(r'MAPI')
+        if ac <= 0 :
+            raise ValueError('ERROR : The database %s appears to be empty. Returning' % src)
             
-            self.log("INFO : Opening PST file - %s" % pst)     
-            ns.AddStore(pst)
-            rootFolder = ns.Folders.GetLast()
-            rootFolder.Name = dest
-            
-            self.log("INFO : Creating directory structure in : %s" % pst)
-            all = dBNotes.AllDocuments
-            ac = all.Count
-            for fld in dBNotes.Views :
-                if not self.running :
-                    return
-                    
-                if (fld.Name == "($Sent)" or fld.IsFolder) and fld.EntryCount > 0 :
-                    try :
-                        pstfld = rootFolder
-                        if fld.Name == "($Sent)" :
-                            # Special case of Sent folder
-                            try :
-                                pstfld = pstfld.Folders["Sent"]
-                            except :
-                                pstfld = pstfld.Folders.Add("Sent")
-                                self.log("INFO : Creating Outlook folder %s - Sent" % pst)
-                        elif fld.Name == "($Inbox)" : 
-                            # Special case of Inbox folder
-                            try :
-                                pstfld = pstfld.Folders["Inbox"]
-                            except :
-                                pstfld = pstfld.Folders.Add("Inbox")
-                                self.log("INFO : Creating Outlook folder %s - Inbox" % pst)
-                        else :
-                            for f in fld.Name.split('\\') :
-                                try :
-                                    pstfld = pstfld.Folders[f]
-                                except :
-                                    pstfld = pstfld.Folders.Add(f)
-                                    self.log("INFO : Creating Outlook folder %s - %s" % (pst, fld.Name))
-                    except Exception as ex :
-                        self.log("ERROR : Can not create Outlook folder %s - %s" % (pst, fld.Name))
-                        self.log("ERROR : %s :" % ex)
-                        continue		
-                else :
-                    continue 
-        elif self.Format.get() == Format.EML  :        
-            self.log("INFO : Creating directory structure in : %s" % dest)
-            all = dBNotes.AllDocuments
-            ac = all.Count
-
-            for fld in dBNotes.Views :
-                if not self.running :
-                    return
-
-                if (fld.Name == "($Sent)" or fld.IsFolder) and fld.EntryCount > 0 :
-                    if fld.Name == "($Sent)" :
-                        path = os.path.join(self.destPath, dest, "Sent")                    
-                    elif fld.Name == "($Inbox)" :
-                        path = os.path.join(self.destPath, dest, "Inbox")
-                    else :
-                        path = os.path.join(self.destPath, dest, fld.Name)
-                    try :
-                        if not os.path.exists (path) :
-                            os.makedirs(path , 0x755)
-                            self.log("INFO : Creating directory %s" % path)
-                    except Exception as ex :
-                        self.log("ERROR : Can not create directory %s" % path)
-                        self.log("ERROR : %s :" % ex)
-                        continue                
-                else :
-                    continue
-                    
         # Preconvert all messages to MIME before writing EML files as the
         # C DLL might not be finished saving the message before the COM
         # interface tries to access the MIME body. Also the call to mapiex.mapi()
         # must come after the conversion, as if it doesn't the call to
         # MIMEConvertCDParts will raise a "File does not exist error (259)".
         # ?*#! -> Weird interaction MAPI to Notes  
-        self.log("INFO : Starting MIME encoding of messages")
+        self.log(ErrorLevel.NORMAL, "Starting MIME encoding of messages")
         for fld in dBNotes.Views :
             if  not (fld.Name == "($Sent)" or fld.IsFolder) or fld.EntryCount <= 0 :
                 if fld.EntryCount > 0 :
-                    tl.title("Lotus Notes Converter - Phase 2/3 Converting MIME (%.1f%%)" % float(10.*c/ac))
+                    tl.title("Lotus Notes Converter - Phase 1/2 Converting MIME (%.1f%%)" % float(10.*c/ac))
                     self.update()
                 continue
             doc = fld.GetFirstDocument()
@@ -651,58 +586,90 @@ class Gui(tkinter.Frame):
                 try :              
                     if not self.ConvertToMIME(doc) :
                         e+=1
-                        self.log("ERROR : Can not convert message %d to MIME" % c)
+                        self.log(ErrorLevel.ERROR, "Can not convert message %d to MIME" % c)
                 except Exception as ex:
-                    self.log("ERROR : Exception converting message %d to MIME : %s" % (c, ex))
+                    self.log(ErrorLevel.ERROR, "Exception converting message %d to MIME : %s" % (c, ex))
                 doc = fld.GetNextDocument(doc)
                 c+=1
                 if (c % 20) == 0:
-                    tl.title("Lotus Notes Converter - Phase 2/3 Converting MIME (%.1f%%)" % float(10.*c/ac))
+                    tl.title("Lotus Notes Converter - Phase 1/2 Converting MIME (%.1f%%)" % float(10.*c/ac))
                     self.update()
 
         if e == 100 :
-            self.log ("ERROR : Too many exceptions. Returning")
-                    
+            self.log (ErrorLevel.ERROR, "Too many exceptions during MIME conversion. Returning")
+ 
+        # Open le MBOX
+        f = None
+        ns = None
+        mbox = None
+        pst = None
+        rootFolder = None
         MAPI = None
-        if self.UseMAPI.get() == UsingMAPI.YES :
+
+        if self.Format.get() == Format.MBOX and self.MBOXType.get() == SubdirectoryMBOX.NO :
+            mbox = os.path.join(self.destPath, (dest + ".mbox"))
+            self.log(ErrorLevel.NORMAL, "Opening MBOX file - %s" % mbox)
+            f = open (mbox, "wb")
+        elif self.Format.get() == Format.PST :
+            pst = os.path.join(self.destPath, (dest + ".pst"))
+            ns = self.Outlook.GetNamespace(r'MAPI')
+            
+            # FIXME
+            # Can't guarantee that MAPISVC.INF contains the service "MSPST MS" and so
+            # can't use MAPI to create PST 
+            self.log(ErrorLevel.NORMAL, "Opening PST file - %s" % pst)     
+            ns.AddStore(pst)
+            rootFolder = ns.Folders.GetLast()
+            rootFolder.Name = dest
+            
             try :
                 MAPI = mapiex.mapi()        
                 MAPI.OpenMessageStore(dest)
                 MAPIrootFolder = MAPI.OpenRootFolder ()
             except Exception as ex:
-                self.log("ERROR : Could not connect to MAPI !")
-                self.log("ERROR : Exception %s :" % ex)
+                self.log(ErrorLevel.ERROR, "Could not connect to MAPI !")
+                self.log(ErrorLevel.ERROR, "Exception %s :" % ex)
                 raise
                 
-        self.log("INFO : Starting importation of EML messages into mailbox")
+        self.log(ErrorLevel.NORMAL, "Starting importation of EML messages into mailbox")
         ac = c # Update all message count
         c=0
         e=0
         for fld in dBNotes.Views :
             if  not (fld.Name == "($Sent)" or fld.IsFolder) or fld.EntryCount <= 0 :
                 if fld.EntryCount > 0 :
-                    tl.title("Lotus Notes Converter - Phase 3/3 Import Message %d of %d (%.1f%%)" % (c, ac, float(10.*(ac + 9.*c)/ac)))
+                    tl.title("Lotus Notes Converter - Phase 2/2 Import Message %d of %d (%.1f%%)" % (c, ac, float(10.*(ac + 9.*c)/ac)))
                     self.update()
                 continue
 
             pstfld = None
-            if self.Format.get() == Format.PST :
-                if self.UseMAPI.get() == UsingMAPI.YES :
-                    if fld.Name == "($Sent)" :
-                        pstfld = MAPIrootFolder.OpenSubFolder("Sent")
-                    elif fld.Name == "($Inbox)" :
-                        pstfld = MAPIrootFolder.OpenSubFolder("Inbox")
-                    else :
-                        pstfld = MAPIrootFolder.OpenSubFolder (fld.Name)
+            if self.Format.get() == Format.EML :            
+                if fld.Name == "($Sent)" :
+                    path = os.path.join(self.destPath, dest, "Sent")                    
+                elif fld.Name == "($Inbox)" :
+                    path = os.path.join(self.destPath, dest, "Inbox")
                 else :
-                    pstfld = rootFolder
-                    if fld.Name == "($Sent)" :
-                        pstfld = pstfld.Folders["Sent"]
-                    elif fld.Name == "($Inbox)" :
-                        pstfld = pstfld.Folders["Inbox"]
-                    else :
-                        for f in fld.Name.split('\\') :
-                            pstfld = pstfld.Folders[f]                        
+                    path = os.path.join(self.destPath, dest, fld.Name)
+                try :
+                    if not os.path.exists (path) :
+                        os.makedirs(path , 0x755)
+                        self.log(ErrorLevel.NORMAL, "Creating directory %s" % path)
+                except Exception as ex :
+                    self.log(ErrorLevel.ERROR, "Can not create directory %s" % path)
+                    self.log(ErrorLevel.ERROR, "%s :" % ex)
+                    continue                
+            elif self.Format.get() == Format.PST :
+                if fld.Name == "($Sent)" :
+                    pstfld = MAPIrootFolder.CreateSubFolder("Sent")
+                elif fld.Name == "($Inbox)" :
+                    pstfld = MAPIrootFolder.CreateSubFolder("Inbox")
+                else :
+                    pstfld = MAPIrootFolder.CreateSubFolder (fld.Name)
+                    
+                if not pstfld :
+                    self.log(ErrorLevel.ERROR, "Could not open folder : %s" % fld.Name)
+                    continue
+                    
             elif self.Format.get() == Format.MBOX and self.MBOXType.get() == SubdirectoryMBOX.YES :
                 mbox = None
                 if fld.Name == "($Sent)" :
@@ -716,12 +683,12 @@ class Gui(tkinter.Frame):
                     mboxdir = os.path.dirname (mbox)
                     if not os.path.exists (mboxdir) :
                         os.makedirs(mboxdir, 0x755)
-                        self.log("INFO : Creating directory %s" % mboxdir)
+                        self.log(ErrorLevel.NORMAL, "Creating directory %s" % mboxdir)
                 except Exception as ex :
-                    self.log("ERROR : Can not create directory %s" % mboxdir)
-                    self.log("ERROR : %s :" % ex)
+                    self.log(ErrorLevel.ERROR, "Can not create directory %s" % mboxdir)
+                    self.log(ErrorLevel.ERROR, "%s :" % ex)
                 
-                self.log("INFO : Opening MBOX file - %s" % mbox)
+                self.log(ErrorLevel.NORMAL, "Opening MBOX file - %s" % mbox)
                 f = open (mbox, "wb")
                 
             doc = fld.GetFirstDocument()
@@ -735,10 +702,25 @@ class Gui(tkinter.Frame):
                     
                     if doc.GetMIMEEntity("Body") == None :
                         subject = doc.GetFirstItem("Subject")
-                        self.log("WARN : Message %d has no MIME body" % c)
+                        HasErr = False
+                        form = doc.GetFirstItem("Form").Text
+                        if not form :
+                            errlvl = ErrorLevel.ERROR
+                            form = "None"
+                            e += 1
+                        elif form in ("Notice", "Return Receipt", "Trace Report") :
+                            # These are clearly not messages, so ok to ignore them
+                            errlvl = ErrorLevel.WARN
+                        else :
+                            errlvl = ErrorLevel.ERROR
+                            e += 1
+                            
+                        self.log(errlvl, "Ignoring message %d of form '%s' without MIME body" % (c, form))                        
                         if subject :
-                            self.log ("     : Subject : %s" % subject.Text)
-                        self.log ("     : Skipping as probably not a message")
+                            self.log (errlvl, "Subject : %s" % subject.Text)
+ 
+                        if errlvl == ErrorLevel.WARN :
+                            self.log (errlvl, "Skipping as probably not a message")
                     else :                
                         if self.Format.get() != Format.MBOX :
                             if self.Format.get() == Format.EML :
@@ -757,7 +739,8 @@ class Gui(tkinter.Frame):
                             d+=1
                             if self.Format.get() == Format.PST :                            
                                 f.close ()
-                                self.ConvertEMLToOutlook (doc, eml, ns, c, pstfld)
+                                message = pstfld.ImportEML(eml)
+                                del message   # Explicitly delete the message so IUnknown:Release is called 
 
                                 # Done with the temporary EML file. Remove it
                                 if eml != None :
@@ -780,8 +763,8 @@ class Gui(tkinter.Frame):
                             os.remove(eml)
                         except :
                             pass
-                    self.log("ERROR : Exception for message %d (%s) :" % (c, ex))
-                    self.log("ERROR : %s" % traceback.format_exc())
+                    self.log(ErrorLevel.ERROR, "Exception for message %d (%s) :" % (c, ex))
+                    self.log(ErrorLevel.ERROR, "%s" % traceback.format_exc())
         
                 finally:                  
                     c+=1
@@ -792,7 +775,7 @@ class Gui(tkinter.Frame):
                         f.write(b"\n")
  
                     if (c % 20) == 0:
-                        tl.title("Lotus Notes Converter - Phase 2/3 Import Message %d of %d (%.1f%%)" % (c, ac, float(10.*(ac + 9.*c)/ac)))
+                        tl.title("Lotus Notes Converter - Phase 2/2 Import Message %d of %d (%.1f%%)" % (c, ac, float(10.*(ac + 9.*c)/ac)))
                         self.update()
                        
             if self.Format.get() == Format.MBOX and self.MBOXType.get() == SubdirectoryMBOX.YES :
@@ -800,177 +783,13 @@ class Gui(tkinter.Frame):
 
         if self.Format.get() == Format.MBOX and self.MBOXType.get() == SubdirectoryMBOX.NO :
             f.close ()
-        self.log("\nINFO : Finished populating directory : %s" % dest)
-        self.log("INFO : Exceptions to treat manually: %d ... Documents OK : %d Untreated Documents : %d" % (e, c - e, ac - c))
+        self.log(ErrorLevel.NORMAL, "Finished populating directory : %s" % dest)
+        self.log(ErrorLevel.NORMAL, "Exceptions: %d ... Documents OK : %d Untreated : %d" % (e, c - e, max(0, ac - c)))
 
         return True
-        
-    def ConvertEMLToOutlook (self, doc, eml, ns, id, pstfld) :
-    
-        if self.UseMAPI.get() == UsingMAPI.YES :
-            message = pstfld.ImportEML(eml)
-
-            enc = doc.GetFirstItem("Encrypt")
-            if enc != None and enc.Text == '1' :
-                # Reopen as a MailItem and then encrypt. It would be better
-                # to work directly with the IMessage though that seems rather
-                # involved. See the site
-                # https://blogs.msdn.microsoft.com/webdav_101/2015/12/16/about-encrypting-or-signing-a-message-programmatically/
-                # for information on how to do this
-                entryID = message.GetEntryID()
-                m = ns.GetItemFromID (codecs.encode(entryID[1][0][1], 'hex'))
-
-                if m == None :
-                    # Got nothing
-                    raise NameError("Can not open MailItem from MAPIMessage (message %d)" % id)
-                try :
-                    self.CheckAndEncrypt (ns, id, m)
-                except Exception as ex :
-                    self.log ("WARN : Can not encrypt message %d (%s)" % (id, ex))
-                m.Close(0)
-
-            del message   # Explicitly delete the message so IUnknown:Release is called
-        else :    
-            # Load the EML file into the Outlook UI.
-            try :          
-                subprocess.call([self.opath, "/eml", eml])
-            except OSError as e:
-                if e.errno == errno.EACCES :
-                    # There is an occasional race every 1000
-                    # messages or so. Just wait for the OS to
-                    # properly close the EML file
-                    time.sleep(0.05)
-                    subprocess.call([self.opath, "/eml", eml])
-                else :
-                    raise                                      
-            
-            # Load the list of all the open Outlook inspectors and check for the
-            # one we are interested. It is identified by its Sender and Date.
-            # Don't use ActiveInspector as dialogs and popups can confuse the
-            # issue. It should also allow the screen to be locked during the
-            # importation.
-            # If the Message-ID field exists rely on it. Otherwise, don't use 
-            # the Subject field as it seems the the text encoding between
-            # Outlook and Notes can make some messages be falsely identified as
-            # different
-
-            m1 = None
-            retries = 0   
-            nSender = None
-            nDate = None
-            nID = None
-
-            # If we have a Message_ID we can rely on it to identify the mail
-            tmp = doc.GetFirstItem("$MessageID")
-            if tmp == None :     
-                for notesSenderField in ("Sender", "From", "Principal", "InetFrom") :
-                    tmp = doc.GetFirstItem(notesSenderField)
-                    if tmp != None :
-                        nSender = tmp.Text
-                        break
-                if nSender == None :
-                    self.log("ERROR : Can't get message %d sender address" % id)
-                else :
-                    nDate = doc.GetFirstItem("PostedDate")
-                    if nDate == None :
-                        self.log("ERROR : Can't get message %d sent date" % id)
-                    else :
-                        try :
-                            nDate = int(time.mktime(time.strptime(nDate.Text, "%d/%m/%Y %H:%M:%S")))
-                        except :
-                            # Can't rely on the date from Outlook in this case for the test below.
-                            nDate = int(time.mktime(time.strptime(nDate.Text, "%d/%m/%Y")))
-            else :
-                nID = tmp.Text
-            
-            while (nID != None or (nSender != None and nDate != None)) and retries < 100 :
-                try :
-                    # Don't use "for inspector in self.Outlook.Inspectors :" as doesn't seem
-                    # to work with older versions of the OS.
-                    
-                    for i in list (range (1, len(self.Outlook.Inspectors) + 1)) :               
-                        m2 = win32com.client.CastTo (self.Outlook.Inspectors.Item(i).CurrentItem, "_MailItem")
-
-                        if nID != None :
-                            if nID != m2.PropertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x1035001F") :
-                                continue
-                        else :
-                            oSender = m2.SenderEmailAddress
-                            if not oSender or oSender != nSender :
-                                continue         
-                            oDate = m2.SentOn
-                            if not oDate or nDate != int(oDate) :
-                                continue              
-                         
-                        m1 = m2
-                        break                                 
-                    if m1 != None :
-                        break
-                    else :
-                        time.sleep (0.05) # Sleep for 50 ms
-                except :
-                    time.sleep (0.05) # Sleep for 50 ms
-                finally :                                        
-                    retries += 1
-                
-            if m1 == None :
-                # Got nothing after 5 seconds
-                raise NameError("Can not open EML message %d with Outlook" % id)
-                
-            enc = doc.GetFirstItem("Encrypt")
-            if enc != None and enc.Text == '1' :
-                try :
-                    self.CheckAndEncrypt (ns, id, m1)
-                except Exception as ex :
-                    self.log ("WARN : Can not encrypt message %d (%s)" % (id, ex))
-
-            m1.Move(pstfld)
-            m1.Close(1)     # Discard the copy in the Outlook Inbox
-        
-    def CheckAndEncrypt (self, ns, id, m) :
-        if self.Encrypt.get() == EncryptionType.NONE :
-            return
-
-        if self.Encrypt.get() != EncryptionType.ASK :            
-            # Check if can resolve the sender
-            r = ns.CreateRecipient (m.SenderEmailAddress)
-            r.Resolve()                
-            try :
-                r.AddressEntry.PropertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x8C6A1102")
-            except : 
-                try :
-                    # The certificate might be in a contact 
-                    contact = r.AddressEntry.GetContact()
-                    contact.PropertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x3A701102")
-                except :            
-                    self.log ("WARN : Message %d not encrypted !!!! Sender %s has missing certificate" % (id, m.SenderEmailAddress)) 
-                    # Outlook 2007 doesn't have an m.Sender attribute of type AddressEntry and so can't easily
-                    # do anything else but not encrypt the mail. Seem to exist in Outlook 2010/2013 however
-                    return         
-        
-            # Check the recipients addresses can be resolved and we have a valid certificate for them
-            for i in range (m.Recipients.Count, 0, -1) :
-                r = ns.CreateRecipient (m.Recipients[i].Name)
-                r.Resolve ()
-                try :
-                    r.AddressEntry.PropertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x8C6A1102")
-                except :
-                    try :
-                        contact = r.AddressEntry.GetContact()
-                        contact.PropertyAccessor.GetProperty("http://schemas.microsoft.com/mapi/proptag/0x3A701102")
-                    except :
-                        if self.Encrypt.get() == EncryptionType.REMOVE :
-                            self.log ("WARN : Removing %s from recipients of message %d" % (m.Recipients[i].Name, id))
-                            m.Recipients.Remove(i)
-                        else :
-                            self.log ("WARN : Can not encrypt to %s in message %d" % (m.Recipients[i].Name, id))
-                            return
-                        
-        # Ok now we can flag the mail as encrypted. 
-        m.PropertyAccessor.SetProperty("http://schemas.microsoft.com/mapi/proptag/0x6E010003", 1)
  
     def ConvertToMIME (self, doc) :
-        kprivate = "$KeepPrivate";
+
         # I'd really like to use doc.UniversalID here to open the file with 
         # NSFNoteOpenByUNID. However, doc.UniversalID is a string and
         # NSFNoteOpenByUNID expects a struct and the conversion between the
@@ -979,9 +798,15 @@ class Gui(tkinter.Frame):
         stat, hNote = self.NotesEntries.NSFNoteOpenExt(ctypes.c_uint32(int(doc.NoteID, 16)), self.NotesEntries.OPEN_RAW_MIME)
 
         if stat != 0 :
-             self.log ("ERROR : Can not open document id 0x%s (ErrorID : %d)" % (doc.NoteID, stat))
+             self.log (ErrorLevel.ERROR, "Can not open document id 0x%s (ErrorID : %d)" % (doc.NoteID, stat))
         else :
             try :
+                # If present, $KeepPrivate will prevent conversion, so nuke the sucka
+                tmp = doc.GetFirstItem("$KeepPrivate")     
+                if tmp != None :
+                    self.log(ErrorLevel.INFO, "Removing $KeepPrivate item from note id 0x%s" % doc.NoteID)
+                    self.NotesEntries.NSFItemDelete(hNote, "$KeepPrivate")
+
                 # The C API identifies some unencrypted mail as "Sealed". These don't need
                 # to be unencrypted to allow conversion to MIME.
                 enc = doc.GetFirstItem("Encrypt")
@@ -991,19 +816,16 @@ class Gui(tkinter.Frame):
                     # (we don't care about the signature)
                     retval, isSigned, isSealed = self.NotesEntries.NSFNoteIsSignedOrSealed(hNote)
                     if isSealed :
-                        # self.log ("INFO : Document note id 0x%s is encrypted." % doc.NoteID)
+                        self.log (ErrorLevel.INFO, "Document note id 0x%s is encrypted." % doc.NoteID)
                         DECRYPT_ATTACHMENTS_IN_PLACE = ctypes.c_uint16(1);
                         stat = self.NotesEntries.NSFNoteDecrypt(hNote, DECRYPT_ATTACHMENTS_IN_PLACE);
                         
                         if stat != 0 :
-                            self.log ("ERROR : Document note id 0x%s is encrypted, cannot be converted." % doc.NoteID)
+                            self.log (ErrorLevel.ERROR, "Document note id 0x%s is encrypted, cannot be converted." % doc.NoteID)
                 
                 if stat == 0 :
-                    # If present, $KeepPrivate will prevent conversion, so nuke the sucka
-                    self.NotesEntries.NSFItemDelete(hNote, kprivate);
-
                     # if the note is already in mime format, we don't have to convert
-                    if (self.NotesEntries.NSFNoteHasComposite(hNote)) :
+                    if (not self.NotesEntries.NSFNoteHasMIMEPart(hNote)) :
                         stat, hCC = self.NotesEntries.MMCreateConvControls ()
                         if stat == 0 :
                             self.NotesEntries.MMSetMessageContentEncoding(hCC, 2) # html w/images & attachments
@@ -1018,19 +840,19 @@ class Gui(tkinter.Frame):
                                 UPDATE_FORCE = ctypes.c_uint16(1);
                                 stat = self.NotesEntries.NSFNoteUpdate(hNote, UPDATE_FORCE)
                                 if stat != 0 :
-                                    self.log("ERROR : Error calling NSFNoteUpdate (%d)" % stat)
+                                    self.log(ErrorLevel.ERROR, "Error calling NSFNoteUpdate (%d)" % stat)
                             elif stat == 14941 :
-                                self.log("INFO : MIMEConvertCDParts : Error converting note id 0x%s to MIME type text/html" % doc.NoteID)
-                                self.log("INFO : MIMEConvertCDParts : Attempting to convert to text/plain")
+                                self.log(ErrorLevel.INFO, "MIMEConvertCDParts : Error converting note id 0x%s to MIME type text/html" % doc.NoteID)
+                                self.log(ErrorLevel.INFO, "MIMEConvertCDParts : Attempting to convert to text/plain")
                                 self.NotesEntries.MMSetMessageContentEncoding(hCC, 1)
                                 stat = self.NotesEntries.MIMEConvertCDParts(hNote, bCanonical, bIsMime, hCC)    
                                 
                             if stat != 0 :
-                                self.log ("ERROR : Error calling MIMEConvertCDParts (%d)" % stat)
+                                self.log (ErrorLevel.ERROR, "Error calling MIMEConvertCDParts (%d)" % stat)
                                 
                             self.NotesEntries.MMDestroyConvControls(hCC)
                         else :
-                            self.log("ERROR : Error calling MMCreateConvControls (%d)" % stat)
+                            self.log(ErrorLevel.ERROR, "Error calling MMCreateConvControls (%d)" % stat)
                             
                 if hNote != None :
                     self.NotesEntries.NSFNoteClose(hNote)
@@ -1039,9 +861,42 @@ class Gui(tkinter.Frame):
                     # Ensure Note is closed and then re-raise the exception
                     self.NotesEntries.NSFNoteClose(hNote)
                 raise
-            
+        
         return (stat == 0)   
         
+    def WriteMIMEHeader (self, f, mime) :
+         if mime != None :
+            contentType = mime.ContentType;
+            headers = mime.Headers;
+            encoding = mime.Encoding;
+            
+            # if it's a binary part, force it to b64
+            if (encoding == 1730 or encoding == 1729) :  
+                # MIMEEntity.ENC_IDENTITY_BINARY and MIMEEntity.ENC_IDENTITY_8BIT
+                mime.EncodeContent(1727)  # MIMEEntity.ENC_BASE64
+                headers = mime.Headers
+
+            # Place the From and Date fields first to simplify conversion to MBOX format
+            content = mime.GetSomeHeaders(["From"], True)
+            f.write(content.encode('utf-8'))
+            if not content.endswith ("\n") :
+                f.write (b"\n")
+            content = mime.GetSomeHeaders(["Date"], True)
+            f.write(content.encode('utf-8'))
+            if not content.endswith ("\n") :
+                f.write (b"\n")
+            
+            # message envelope. If no MIME-Version header, add one
+            if "MIME-Version:" not in headers :
+                f.write(b"MIME-Version: 1.0\n")
+            
+            # Write the rest of the headers, but exclude the MIME content-type to be placed last
+            content = mime.GetSomeHeaders(["From", "Date", "Content-type"], False)
+            # Some of the text might be in utf-8 so give it special treatment
+            f.write(content.encode('utf-8'))
+            if not content.endswith ("\n") :
+                f.write (b"\n") 
+    
     def WriteMIMEChildren (self, f, mime, first) :
         if mime != None :
             contentType = mime.ContentType;
@@ -1055,31 +910,10 @@ class Gui(tkinter.Frame):
                 headers = mime.Headers
 
             if first :
-                # Place the From and Date fields first to simplify conversion to MBOX format
-                content = mime.GetSomeHeaders(["From"], True)
-                f.write(content.encode('utf-8'))
-                if not content.endswith ("\n") :
-                    f.write (b"\n")
-                content = mime.GetSomeHeaders(["Date"], True)
-                f.write(content.encode('utf-8'))
-                if not content.endswith ("\n") :
-                    f.write (b"\n")
-                
-                # message envelope. If no MIME-Version header, add one
-                if "MIME-Version:" not in headers :
-                    f.write(b"MIME-Version: 1.0\n")
-                
-                # Write the rest of the headers, but exclude the MIME content-type to be placed last
-                content = mime.GetSomeHeaders(["From", "Date", "Content-type"], False)
-                # Some of the text might be in utf-8 so give it special treatment
-                f.write(content.encode('utf-8'))
-                if not content.endswith ("\n") :
-                    f.write (b"\n")
-                    
                 content = mime.GetSomeHeaders(["Content-type"], True)
                 f.write(content.encode('utf-8'))
                 if not content.endswith ("\n") :
-                    f.write (b"\n")
+                    f.write (b"\n")  
             else :
                 f.write (headers.encode('utf-8'))
                 if not headers.endswith ("\n") :
@@ -1121,15 +955,114 @@ class Gui(tkinter.Frame):
             # Get first Body item with a MIME encoding
             mE = doc.GetMIMEEntity("Body")
             if mE != None :
-                self.WriteMIMEChildren (f, mE, True)
+                self.WriteMIMEHeader (f, mE)
+                if self.Encrypt.get() == EncryptionType.NONE :
+                    self.WriteMIMEChildren (f, mE, True)
+                else : 
+                    enc = doc.GetFirstItem("Encrypt")
+                    if enc != None and enc.Text == '1' :
+                        f2 = io.BytesIO()
+                        self.WriteMIMEChildren (f2, mE, True)
+
+                        # See https://msdn.microsoft.com/en-us/library/windows/desktop/aa382376(v=vs.85).aspx
+                        # Note that the PROV_RSA_AES provider supplies RC2, RC4 and AES encryption whereas as 
+                        # the PROV_RSA_FULL provider only gives RC2 and RC4 encryption.
+                        if not self.hCryptoProv :
+                            try :
+                                self.hCryptProv = win32crypt.CryptAcquireContext (None, None, win32cryptcon.PROV_RSA_AES,  win32cryptcon.CRYPT_SILENT)
+                            except :
+                                enc = self.Encrypt.get()
+                                if enc == EncryptionType.AES128 or enc == EncryptionType.AES256 :
+                                    self.log(ErrorLevel.ERROR, "Windows cryptographic provider does not support AES encryption")
+                                    self.log(ErrorLevel.ERROR, "Falling back to 3DES 168bit encryption")
+                                    self.Encrypt.set(EncryptionType.DES)
+                                try :
+                                    self.hCryptProv = win32crypt.CryptAcquireContext (None, None, win32cryptcon.PROV_RSA_FULL,  win32cryptcon.CRYPT_SILENT)
+                                except :
+                                    self.log(Errorlevl.ERROR, "Can not open Windows cryptographic provider. Disabling all encryption")
+                                    f2.close()
+                                    self.WriteMIMEChildren (f, mE, True)                     
+                                    self.Encrypt.set(EncryptionType.NONE)
+                                    return True                             
+                        
+                        if not self.certificate :
+                            hStoreHandle = win32crypt.CertOpenSystemStore("MY", self.hCryptProv)
+                        
+                            for cert in hStoreHandle.CertEnumCertificatesInStore() :
+                                try :
+                                    (type, privcert) = cert.CryptAcquireCertificatePrivateKey(win32cryptcon.CRYPT_ACQUIRE_SILENT_FLAG)
+                                    if type == win32cryptcon.AT_KEYEXCHANGE :
+                                        # Ok we have the users key as we can access both the public and private
+                                        # keys and the key is flagged for use with Exchange
+                                        self.certificate = cert
+                                        break
+                                except :
+                                    pass
+                                        
+                        if not self.certificate :
+                            self.log(ErrorLevel.WARN, "Could not obtain the users Exchange certificate.")
+                            self.log(Errorlevel.WARN, "Disabling all encryption !!")
+                            f2.close()
+                            self.WriteMIMEChildren (f, mE, True)
+                            self.Encrypt.set(EncryptionType.NONE)                            
+                        else :
+                            EncodingType = win32cryptcon.PKCS_7_ASN_ENCODING | win32cryptcon.X509_ASN_ENCODING
+                            
+                            if self.Encrypt.get() == EncryptionType.RC2CBC :
+                                EncryptAlgorithm = {"ObjId" : win32cryptcon.szOID_RSA_RC2CBC, "Parameters" : None}
+                            elif self.Encrypt.get() == EncryptionType.DES :
+                                EncryptAlgorithm = {"ObjId" : win32cryptcon.szOID_RSA_DES_EDE3_CBC, "Parameters" : None}
+                            elif self.Encrypt.get() == EncryptionType.AES128 :
+                                # Why does win32cryptcon not define szOID_NIST_AES128_CBC and szOID_NIST_AES256_CBC ???
+                                # szOID_NIST_AES128_CBC = "2.16.840.1.101.3.4.1.2"
+                                # szOID_NIST_AES256_CBC = "2.16.840.1.101.3.4.1.42"
+                                EncryptAlgorithm = {"ObjId" : "2.16.840.1.101.3.4.1.2", "Parameters" : None}
+                            elif self.Encrypt.get() == EncryptionType.AES256 :
+                                EncryptAlgorithm = {"ObjId" : "2.16.840.1.101.3.4.1.42", "Parameters" : None}
+                            else :
+                                raise NameError ("Unrecognised encryption selected")  # This shouldn't be possible 
+                            EncryptParams= {"MsgEncodingType" : EncodingType, "CryptProv" : self.hCryptProv, "ContentEncryptionAlgorithm" : EncryptAlgorithm}
+                            blob = win32crypt.CryptEncryptMessage (EncryptParams, [self.certificate], f2.getvalue())
+                            
+                            f.write(b'Content-Type: application/x-pkcs7-mime;smime-type=enveloped-data;name="smime.p7m"\n')
+                            f.write(b'Content-Transfer-Encoding: base64\n')
+                            f.write(b'Content-Disposition: attachment;filename="smime.p7m"\n')
+                            f.write(b'\n')
+                            
+                            f.write (codecs.encode(blob, "base64"))                           
+                    else :
+                        self.WriteMIMEChildren (f, mE, True)
                 return True
             else :
-                self.log("WARN : Message 0x%s has no MIME body" % doc.NoteID)
-                self.log("      Type : %d" % doc.GetFirstItem("Body").Type)
-                self.log("      Subject : %s" % doc.GetFirstItem("Subject").Text)
+                self.log(ErrorLevel.WARN, "Message 0x%s has no MIME body" % doc.NoteID)
+                self.log(ErrorLevel.WARN, "Type : %d" % doc.GetFirstItem("Body").Type)
+                self.log(ErrorLevel.WARN, "Subject : %s" % doc.GetFirstItem("Subject").Text)
         return False
+        
+    def log(self, errlvl, message = "", newline = True):
+        if errlvl == ErrorLevel.NORMAL :
+            if self.ErrorLevel.get() >= ErrorLevel.NORMAL :
+                message = "INFO : " + message
+            else :
+                return
+        elif errlvl == ErrorLevel.ERROR :
+            if self.ErrorLevel.get() >= ErrorLevel.ERROR :
+                message = "ERROR : " + message
+            else :
+                return
+        elif errlvl == ErrorLevel.WARN :
+            if self.ErrorLevel.get() >= ErrorLevel.WARN :
+                message = "WARN : " + message
+            else :
+                return
+        elif errlvl == ErrorLevel.INFO :
+            if self.ErrorLevel.get() >= ErrorLevel.INFO :
+                message = "INFO : " + message
+            else :
+                return
+        else :
+            message = "ERROR : Unrecognised Error Level given to log function"
 
-    def log(self, message = "", newline = True):
         self.messageWidget.config(state = tkinter.NORMAL)
         if (newline) :
             self.messageWidget.insert(tkinter.END, message+"\n")

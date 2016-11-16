@@ -130,6 +130,18 @@ class mapifolder (mapiobject) :
                 else :
                     return subfolder.OpenSubFolder (flds)
 
+    def CreateSubFolder (self, flds) :
+        if not isinstance (flds, list) :
+            flds = self._splitpath (flds)
+
+        fld = flds[0]
+        flds = flds[1:]
+        subfolder = mapifolder(self.mapi, self.folder().CreateFolder(win32com.mapi.mapi.FOLDER_GENERIC, fld, None, None, win32com.mapi.mapi.OPEN_IF_EXISTS | win32com.mapi.mapi.MAPI_UNICODE)) 
+        if subfolder == None or len (flds) == 0 :
+            return subfolder
+        else :
+            return subfolder.CreateSubFolder (flds)
+
     def GetFirstSubFolder (self) :
         if self.GetHierarchy() :
             return self.GetNextSubFolder ()
@@ -178,7 +190,7 @@ class mapifolder (mapiobject) :
             return None
         row = rows[0] 
         (eid_tag, eid), (flag_tag, flag) = row
-        message = mapimessage()
+        message = mapimessage(self.mapi)
         message.Open(eid)
         return message
 
@@ -198,9 +210,9 @@ class mapi (object) :
         win32com.mapi.mapi.MAPIInitialize(None)
         self.messagestorestable = None
         self.converter = None
-        self._session = win32com.mapi.mapi.MAPILogonEx(0, profilename, None, win32com.mapi.mapi.MAPI_EXTENDED | win32com.mapi.mapi.MAPI_USE_DEFAULT)   
+        self._session = win32com.mapi.mapi.MAPILogonEx(0, profilename, None, win32com.mapi.mapi.MAPI_EXTENDED | win32com.mapi.mapi.MAPI_USE_DEFAULT)
         os.chdir(save_cwd)
-        
+   
     def __delete__ (self) :
         win32com.mapi.mapi.MAPIUninitialize()
            
@@ -228,7 +240,7 @@ class mapi (object) :
             obj = AddressBook.OpenEntry((eid), None, win32com.mapi.mapi.MAPI_BEST_ACCESS)
             try :
                 # FIXME : Why is PR_SMTP_ADDRESS not in win32com.mapi.mapitags ? 
-                PR_SMTP_ADDRESS = 0x39FE001F
+                PR_SMTP_ADDRESS = int(0x39FE001F)
                 (count, prop) = obj.GetProps ((PR_SMTP_ADDRESS), 0)
                 return prop[0][1]
             except :
@@ -282,6 +294,47 @@ class mapi (object) :
         (eid_tag, eid), (name_tag, name), (def_store_tag, def_store) = row
         self.msgstore = self.session().OpenMsgStore(0, eid, None, win32com.mapi.mapi.MDB_NO_DIALOG | win32com.mapi.mapi.MAPI_BEST_ACCESS)
         
+    def AddMessageStore (self, storename, storepath) :
+        # Note that this method adds the store without opening it.
+        if not os.path.exists (storepath) :
+            raise NameError("mapi:AddMessageStore : File %s does not exist" % storepath)
+        
+        # FIXME: would like to use self.session.AdminServices(0), rather than
+        # the next lines, but not in PyWin32 yet, so have to get the current
+        # profile from the ProfileTable
+
+        # Identify current profile
+        profileAdmin = win32com.mapi.mapi.MAPIAdminProfiles(0)
+        profileTable = profileAdmin.GetProfileTable(0)
+        profileRows = win32com.mapi.mapi.HrQueryAllRows(profileTable, [win32com.mapi.mapitags.PR_DISPLAY_NAME_A], None, None, 0)
+        profilename = self.GetProfileName()
+        profile = None
+        for p in profileRows :
+            if p[0][1] == profilename :
+                profile = p[0][1]
+                break
+        if not profile :
+            raise NameError("mapi:AddMessageStore : Can not identify profile %s" % profilename)
+          
+        # Add the PST file as a service to the profile. If 'MSPST MS' service is not defined in
+        # the file mapisvc.inf then this will fail with MAPI_E_NOT_FOUND. This seems to be the case
+        # in most recent windows installs !!!
+        serviceAdmin = profileAdmin.AdminServices(str(profile, 'utf-8'), None, 0, win32com.mapi.mapi.MAPI_UNICODE) 
+        serviceAdmin.CreateMsgService('MSPST MS', None, 0, win32com.mapi.mapi.MAPI_UNICODE)
+        
+        # Get the service table - looking for service IDs. The PST is the last
+        # service added
+        # FIXME : Is there a race condition here that could be a security risk ?
+        msgServiceTable = serviceAdmin.GetMsgServiceTable(0)
+        msgServiceRows = win32com.mapi.mapi.HrQueryAllRows(msgServiceTable, [win32com.mapi.mapitags.PR_SERVICE_UID], None, None, 0)
+        serviceUID = msgServiceRows[-1][0][1]
+        serviceUID = pythoncom.MakeIID(serviceUID, 1)
+        
+        # Configure the PST file.
+        # FIXME : Why is PR_PST_PATH not in win32com.mapi.mapitags ? 
+        PR_PST_PATH = int(0x6700001E)
+        serviceAdmin.ConfigureMsgService(serviceUID, 0, 0, ((win32com.mapi.mapi.PR_DISPLAY_NAME_A, storename), (PR_PST_PATH, storepath)))
+    
     def OpenRootFolder (self) :      
         # Open the root folder of the MsgStore
         hr, props = self.msgstore.GetProps((win32com.mapi.mapitags.PR_IPM_SUBTREE_ENTRYID), 0)

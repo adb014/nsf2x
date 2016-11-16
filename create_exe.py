@@ -57,7 +57,7 @@ def main () :
     RT_BITMAP = 2
     RT_MANIFEST = 24
 
-    version = "1.1.0"
+    version = "1.2.2"
     description="NSF2X - Converts Lotus NSF files to EML, MBOX or PST files..."
     
     # A manifest which specifies the executionlevel
@@ -179,7 +179,7 @@ def main () :
           windows=[nsf2x],
           
           # version of the program
-          version="1.1.0",
+          version=version,
           
           # short description of the program
           description=description,
