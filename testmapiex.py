@@ -5,10 +5,6 @@ eml = 'PATH TO EML FILE'
 storename = 'VALID MAPI STORE NAME'
 dirname = 'VALID MAPI DIRECTORY NAME RO CREATE IN STORE'
 
-eml = 'c:/Users/C07056/Documents/temp/1.eml'
-storename = 'temp'
-dirname = 'Crud'
-
 # Test of enumeration of the message stores that are opened
 def EnumerateMessageStore (MAPI) :
     messagestorestable = MAPI._GetContents ()
