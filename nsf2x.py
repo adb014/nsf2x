@@ -38,24 +38,16 @@ import win32cryptcon
 try :
     # Python 3.x
     import tkinter
-    import winreg
+    import tkinter.ttk as ttk
 except :
     # Python 2.7
-    import Tkinter as tkinter 
-    import _winreg as winreg
+    import Tkinter as tkinter
+    import ttk
 
 import mapiex
 
 #FIXME this list should be extended to match regular install paths
 notesDllPathList = [r'c:/notes', r'd:/notes', r'c:/program files/notes', r'd:/program files/notes', r'c:/program files (x86)/notes', r'd:/program files (x86)/notes']
-
-def OutlookPath () :
-    aReg = winreg.ConnectRegistry(None, winreg.HKEY_LOCAL_MACHINE)
-    aKey = winreg.OpenKey(aReg, r"SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\OUTLOOK.EXE")
-    n, v, t = winreg.EnumValue(aKey,0)
-    winreg.CloseKey(aKey)
-    winreg.CloseKey(aReg)
-    return v
 
 # The following classes are a means of creating a simple ENUM functionality
 # Use list(range()) for Python 2.7 and 3.x compatibility
@@ -272,13 +264,13 @@ class Gui(tkinter.Frame):
         
         #Lotus Password
         tkinter.Label(self.master, text="Enter Lotus Notes password").grid(row=1, column=1, sticky=tkinter.W)
-        self.entryPassword = tkinter.Entry(self.master, relief =tkinter.GROOVE) #, show="*")
+        self.entryPassword = tkinter.Entry(self.master, relief=tkinter.GROOVE) #, show="*")
         self.entryPassword.insert(0, "Enter Lotus Notes password")
         self.entryPassword.grid(row=1,column=1, columnspan=2, sticky=tkinter.E+tkinter.W)
         self.entryPassword.bind("<FocusIn>", self.bindEntry)
       
         #Action button
-        self.startButton = tkinter.Button(self.master, text="Open Sessions", command=self.doConvert, relief =tkinter.GROOVE)
+        self.startButton = tkinter.Button(self.master, text="Open Sessions", command=self.doConvert, relief=tkinter.GROOVE)
         self.startButton.grid(row=1,column=3, columnspan=2, sticky=tkinter.E+tkinter.W)
         
         # Conversion Type
@@ -420,46 +412,50 @@ class Gui(tkinter.Frame):
         L1.grid(row=1, column=1, columnspan=4, sticky=tkinter.W)
 
         R1 = tkinter.Radiobutton(self.dialog, text="No", variable=self.MBOXType, value=SubdirectoryMBOX.NO)
-        R1.grid(row=2, column=1, columnspan=2, sticky=tkinter.E+tkinter.W)
+        R1.grid(row=2, column=1, columnspan=2, sticky=tkinter.W)
         
         R2 = tkinter.Radiobutton(self.dialog, text="Yes", variable=self.MBOXType, value=SubdirectoryMBOX.YES)
-        R2.grid(row=2, column=3, columnspan=2, sticky=tkinter.E+tkinter.W)
+        R2.grid(row=2, column=3, columnspan=2, sticky=tkinter.W)
+        
+        S1 = ttk.Separator(self.dialog, orient=tkinter.HORIZONTAL).grid(row=3, columnspan=5, sticky=tkinter.E+tkinter.W)
         
         L2 = tkinter.Label (self.dialog, text="Re-encryption of encrypted Notes messages :")
-        L2.grid(row=3, column=1, columnspan=4, sticky=tkinter.W)
+        L2.grid(row=4, column=1, columnspan=4, sticky=tkinter.W)
         
         R3 = tkinter.Radiobutton(self.dialog, text="None", variable=self.Encrypt, value=EncryptionType.NONE)
-        R3.grid(row=4, column=1, sticky=tkinter.E+tkinter.W)
+        R3.grid(row=5, column=1, sticky=tkinter.W)
 
         R4 = tkinter.Radiobutton(self.dialog, text="RC2 40bit", variable=self.Encrypt, value=EncryptionType.RC2CBC)
-        R4.grid(row=4, column=2, sticky=tkinter.E+tkinter.W)
+        R4.grid(row=5, column=2, sticky=tkinter.W)
         
         R5 = tkinter.Radiobutton(self.dialog, text="3DES 168bit", variable=self.Encrypt, value=EncryptionType.DES)
-        R5.grid(row=4, column=3, columnspan = 2, sticky=tkinter.E+tkinter.W)
+        R5.grid(row=5, column=3, columnspan = 2, sticky=tkinter.W)
         
         R6 = tkinter.Radiobutton(self.dialog, text="AES 128bit", variable=self.Encrypt, value=EncryptionType.AES128)
-        R6.grid(row=5, column=1, columnspan = 2, sticky=tkinter.E+tkinter.W)      
+        R6.grid(row=6, column=1, columnspan = 2, sticky=tkinter.W)      
         
         R7 = tkinter.Radiobutton(self.dialog, text="AES 256bit", variable=self.Encrypt, value=EncryptionType.AES256)
-        R7.grid(row=5, column=3, columnspan = 2, sticky=tkinter.E+tkinter.W)
+        R7.grid(row=6, column=3, columnspan = 2, sticky=tkinter.W)
+        
+        S2 = ttk.Separator(self.dialog, orient=tkinter.HORIZONTAL).grid(row=7, columnspan=5, sticky=tkinter.E+tkinter.W)
         
         L3 = tkinter.Label (self.dialog, text="Error logging level :")
-        L3.grid(row=6, column=1, columnspan=4, sticky=tkinter.W)
+        L3.grid(row=8, column=1, columnspan=4, sticky=tkinter.W)
 
         R7 = tkinter.Radiobutton(self.dialog, text="Normal", variable=self.ErrorLevel, value=ErrorLevel.NORMAL)
-        R7.grid(row=7, column=1, sticky=tkinter.E+tkinter.W)
+        R7.grid(row=9, column=1, sticky=tkinter.W)
         
         R8 = tkinter.Radiobutton(self.dialog, text="Error", variable=self.ErrorLevel, value=ErrorLevel.ERROR)
-        R8.grid(row=7, column=2, sticky=tkinter.E+tkinter.W)
+        R8.grid(row=9, column=2, sticky=tkinter.W)
 
         R9 = tkinter.Radiobutton(self.dialog, text="Warning", variable=self.ErrorLevel, value=ErrorLevel.WARN)
-        R9.grid(row=7, column=3, sticky=tkinter.E+tkinter.W)
+        R9.grid(row=9, column=3, sticky=tkinter.W)
         
         R10 = tkinter.Radiobutton(self.dialog, text="Information", variable=self.ErrorLevel, value=ErrorLevel.INFO)
-        R10.grid(row=7, column=4, sticky=tkinter.E+tkinter.W)
+        R10.grid(row=9, column=4, sticky=tkinter.W)
         
         B1 = tkinter.Button(self.dialog, text="Close", command=self.closeOptions, relief=tkinter.GROOVE)
-        B1.grid(row=8,column=2, columnspan=2, sticky=tkinter.E+tkinter.W)
+        B1.grid(row=10,column=2, columnspan=2, sticky=tkinter.E+tkinter.W)
         
         self.dialog.focus_force ()
  
@@ -479,7 +475,6 @@ class Gui(tkinter.Frame):
                 self.configStop()
                 self.master.after(0, self.doConvertDirectory())
         else : #Check if all is OK
-            self.opath = None
             try :
                 self.Lotus = win32com.client.Dispatch(r'Lotus.NotesSession')
                 if self.NotesEntries == None :
@@ -499,8 +494,6 @@ class Gui(tkinter.Frame):
                 
             try :
                 self.Outlook = win32com.client.Dispatch(r'Outlook.Application')
-                self.opath = OutlookPath()
-                self.log(ErrorLevel.NORMAL, "Path to Outlook : %s" % self.opath)
             except Exception as ex:
                 self.log(ErrorLevel.ERROR, "Could not connect to Outlook !")
                 self.log(ErrorLevel.ERROR, "Exception %s :" % ex)
@@ -596,15 +589,11 @@ class Gui(tkinter.Frame):
                     self.update()
 
         if e == 100 :
-            self.log (ErrorLevel.ERROR, "Too many exceptions during MIME conversion. Returning")
+            self.log (ErrorLevel.ERROR, "Too many exceptions during MIME conversion. Stopping\n")
+            return False
  
-        # Open le MBOX
         f = None
-        ns = None
-        mbox = None
-        pst = None
-        rootFolder = None
-        MAPI = None
+        MAPIrootFolder = None
 
         if self.Format.get() == Format.MBOX and self.MBOXType.get() == SubdirectoryMBOX.NO :
             mbox = os.path.join(self.destPath, (dest + ".mbox"))
@@ -616,7 +605,8 @@ class Gui(tkinter.Frame):
             
             # FIXME
             # Can't guarantee that MAPISVC.INF contains the service "MSPST MS" and so
-            # can't use MAPI to create PST 
+            # can't use MAPI to create PST. This is now the only place the Outlook
+            # Object Model is used, and it would be great to get rid of it.
             self.log(ErrorLevel.NORMAL, "Opening PST file - %s" % pst)     
             ns.AddStore(pst)
             rootFolder = ns.Folders.GetLast()
@@ -671,7 +661,6 @@ class Gui(tkinter.Frame):
                     continue
                     
             elif self.Format.get() == Format.MBOX and self.MBOXType.get() == SubdirectoryMBOX.YES :
-                mbox = None
                 if fld.Name == "($Sent)" :
                     mbox = os.path.join(self.destPath, dest, "Sent.mbox")
                 elif fld.Name == "($Inbox)" :
@@ -702,18 +691,17 @@ class Gui(tkinter.Frame):
                     
                     if doc.GetMIMEEntity("Body") == None :
                         subject = doc.GetFirstItem("Subject")
-                        HasErr = False
-                        form = doc.GetFirstItem("Form").Text
+                        form = doc.GetFirstItem("Form")
                         if not form :
-                            errlvl = ErrorLevel.ERROR
                             form = "None"
-                            e += 1
-                        elif form in ("Notice", "Return Receipt", "Trace Report") :
+                        else :
+                            form = form.Text
+                        if form in ("Notice", "Return Receipt", "Trace Report", "Appointment", "Delivery Report") :
                             # These are clearly not messages, so ok to ignore them
                             errlvl = ErrorLevel.WARN
                         else :
                             errlvl = ErrorLevel.ERROR
-                            e += 1
+                            e += 1                    
                             
                         self.log(errlvl, "Ignoring message %d of form '%s' without MIME body" % (c, form))                        
                         if subject :
@@ -781,10 +769,14 @@ class Gui(tkinter.Frame):
             if self.Format.get() == Format.MBOX and self.MBOXType.get() == SubdirectoryMBOX.YES :
                 f.close ()
 
+        # Alert user if there were too many exceptions
+        if e == 100 :
+            self.log (ErrorLevel.ERROR, "Too many exceptions during mail importation. Stopping")
+       
         if self.Format.get() == Format.MBOX and self.MBOXType.get() == SubdirectoryMBOX.NO :
             f.close ()
-        self.log(ErrorLevel.NORMAL, "Finished populating directory : %s" % dest)
-        self.log(ErrorLevel.NORMAL, "Exceptions: %d ... Documents OK : %d Untreated : %d" % (e, c - e, max(0, ac - c)))
+        self.log(ErrorLevel.NORMAL, "Finished populating : %s" % dest)
+        self.log(ErrorLevel.NORMAL, "Exceptions: %d ... Documents OK : %d Untreated : %d\n" % (e, c - e, max(0, ac - c)))
 
         return True
  
@@ -961,9 +953,6 @@ class Gui(tkinter.Frame):
                 else : 
                     enc = doc.GetFirstItem("Encrypt")
                     if enc != None and enc.Text == '1' :
-                        f2 = io.BytesIO()
-                        self.WriteMIMEChildren (f2, mE, True)
-
                         # See https://msdn.microsoft.com/en-us/library/windows/desktop/aa382376(v=vs.85).aspx
                         # Note that the PROV_RSA_AES provider supplies RC2, RC4 and AES encryption whereas as 
                         # the PROV_RSA_FULL provider only gives RC2 and RC4 encryption.
@@ -979,13 +968,9 @@ class Gui(tkinter.Frame):
                                 try :
                                     self.hCryptProv = win32crypt.CryptAcquireContext (None, None, win32cryptcon.PROV_RSA_FULL,  win32cryptcon.CRYPT_SILENT)
                                 except :
-                                    self.log(Errorlevl.ERROR, "Can not open Windows cryptographic provider. Disabling all encryption")
-                                    f2.close()
-                                    self.WriteMIMEChildren (f, mE, True)                     
-                                    self.Encrypt.set(EncryptionType.NONE)
-                                    return True                             
+                                    self.log(Errorlevl.ERROR, "Can not open Windows cryptographic provider")
                         
-                        if not self.certificate :
+                        if self.hCryptProv and not self.certificate :
                             hStoreHandle = win32crypt.CertOpenSystemStore("MY", self.hCryptProv)
                         
                             for cert in hStoreHandle.CertEnumCertificatesInStore() :
@@ -998,14 +983,18 @@ class Gui(tkinter.Frame):
                                         break
                                 except :
                                     pass
+                                    
+                            if not self.certificate :
+                                self.log(ErrorLevel.ERROR, "Could not obtain the users Exchange certificate.")
                                         
-                        if not self.certificate :
-                            self.log(ErrorLevel.WARN, "Could not obtain the users Exchange certificate.")
-                            self.log(Errorlevel.WARN, "Disabling all encryption !!")
-                            f2.close()
+                        if not self.hCryptProv or not self.certificate :
+                            self.log(Errorlevel.ERROR, "Disabling all encryption !!")
                             self.WriteMIMEChildren (f, mE, True)
                             self.Encrypt.set(EncryptionType.NONE)                            
                         else :
+                            f2 = io.BytesIO()
+                            self.WriteMIMEChildren (f2, mE, True)
+
                             EncodingType = win32cryptcon.PKCS_7_ASN_ENCODING | win32cryptcon.X509_ASN_ENCODING
                             
                             if self.Encrypt.get() == EncryptionType.RC2CBC :
@@ -1029,7 +1018,8 @@ class Gui(tkinter.Frame):
                             f.write(b'Content-Disposition: attachment;filename="smime.p7m"\n')
                             f.write(b'\n')
                             
-                            f.write (codecs.encode(blob, "base64"))                           
+                            f.write (codecs.encode(blob, "base64"))
+                            f2.close()
                     else :
                         self.WriteMIMEChildren (f, mE, True)
                 return True

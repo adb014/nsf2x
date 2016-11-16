@@ -30,9 +30,8 @@ archives, store them on encrypted disks after conversion. You've been warned.
 However, a mail that is encrypted in Notes can be re-encrypted with the users 
 certificate in the PST file, if you have their certificates.
 
-NSF2X is also relatively slow for conversion to PST files, as a shell command of 
-Outlook is run for each mail to display the EML files. So you'll be able to convert
-3000 to 5000 mails per hour on a reasonable laptop. So those 2GB NSF files of yours
+NSF2X is also relatively slow for conversion to PST files, 10000 mails took me about
+30 minutes to convert on a reasonable laptop. So those 2GB NSF files of yours
 are going to take some time to convert to PST files !!! Writing to EML or MBOX is
 about 3 to 5 times faster 
   
@@ -123,13 +122,11 @@ Details
    termination replaced with ".pst". The folder hierarchy in the NSF file is
    recreated in the PST file. Each message from the NSF file is saved to a
    temporary file in <DestPath> and then opened by Outlook and moved to the
-   correct folder. You might see the EML file opening in outlook during this
-   process for each message. At the end of the process the PST file is left
-   open within Outlook. You can either close these PST files before moving
-   them to their final location and reopen them in Outlook or create them
-   directly in their final location. If you run NSF2X twice with the same
-   source and destination, the messages in the NSF file will be copied to
-   the PST files twice.
+   correct folder. At the end of the process the PST file is left open within
+   Outlook. You can either close these PST files before moving them to their
+   final location and reopen them in Outlook or create them directly in their
+   final location. If you run NSF2X twice with the same source and destination, 
+   the messages in the NSF file will be copied to the PST files twice.
 
    8. Modify the conversion options as wanted
   -------------------------------------------   
@@ -205,6 +202,12 @@ Details
   ----------------------------------------------------------------
    Error messages, information and warnings are printed in the window of
    NSF2X. These will be useful to debug any problems you have.
+   
+   If you get the error "File does not exist error (259)" repeatedly from the
+   MIMEConvertCDParts function while converting to MIME, then a workaround 
+   is to convert NSF file by NSF file, restarting NSF2X in between. This 
+   seems to be due to a weird inter-action between Lotus and Outlook that 
+   is unresolved (and not in my code).
    
   13. Enjoy
   ---------
