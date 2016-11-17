@@ -20,6 +20,7 @@ Quick Start
   11. Press the "Convert" button to launch the conversion
   12. Progress is displayed in the title bar, errors in the window
   13. Enjoy
+  14. Treat any exceptions manually
 
 WARNING
 -------
@@ -211,12 +212,49 @@ Details
    
   13. Enjoy
   ---------
-   If you're converting to PST and not using the MAPI interface the continually 
-   flashing EML messages on the screen will stop you from working with your
-   computer. Doing so and loosing Focus on the EML message windows might cause
-   an error in the importation. You're better off going and getting a coffee or
-   if your NSF files are large, going to bed. You can however lock the screen without
-   interrupting the conversion. Use the default MAPI conversion to avoid this.
+   For large NSF file you're better off going and getting a coffee or going to 
+   bed. You can however lock the screen without interrupting the conversion as long
+   as the NSF and PST files are in locations that NSF2X can access with the screen 
+   locked
+   
+   14. Treat any exceptions manually
+   ---------------------------------
+   Some mails in Lotus notes might be malformed and not capable of being
+   transformed into MIME by Lotus. It is also possible that an unexpected
+   error might occur. Hopefully, this will be very rare or not occur at all,
+   but if it does the output of NSF2X will tell the user the number of 
+   exceptions of this type at the end of its execution of each NSF file.
+   
+   The messages that weren't transferred from Lotus will have their subjects 
+   printed to the log window with the prefix
+   
+   #### Subject :  ...
+   
+   This can be used to identify the untransferred message in the Lotus NSF 
+   interface. Don't despair these messages are not lost and can be transferred
+   manually.
+   
+   To manually transfer these files, the message can be dragged to the Windows
+   Desktop. Lotus will then save them to an EML file via a different mechanism
+   used by NSF2X. These EML files can be easily treated for the EML or MBOX
+   message formats of NSF2X. 
+   
+   For the PST format the manner to import these messages manually into the PST
+   file is to 
+   
+   1. Launch CMD.EXE to get a Windows commandline
+   2. Identify the location of the exported EML file. For example
+
+      C:/Users/Me/Desktop/Message.eml
+      
+   3. Ensure that the executable OUTLOOK.EXE is on your path
+   4. Type the command
+   
+      OUTLOOK.EXE /eml C:/Users/Me/Desktop/Message.eml
+      
+   This will pop up a window in Outlook. At this point the message is not in any
+   Outlook OST or PST file. However the message can be dragged to the desired folder
+   within Outlook.
 
 Development
 -----------

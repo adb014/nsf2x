@@ -238,7 +238,6 @@ class Gui(tkinter.Frame):
         self.destPath = os.path.join(os.path.expanduser('~'),'Documents')
         self.checked = False
         self.Lotus = None
-        self.NotesEntries = None
         self.running = False
         self.dialog = None
         self.certificate = None
@@ -297,7 +296,7 @@ class Gui(tkinter.Frame):
         scrollX.pack(side=tkinter.BOTTOM,expand=tkinter.NO,fill=tkinter.X)
 
         self.messageWidget.pack(side=tkinter.RIGHT,expand=tkinter.YES,fill=tkinter.BOTH)
-        self.log(ErrorLevel.NORMAL, "Lotus Notes NSF file to EML, MBOX and PST file  file converter.")
+        self.log(ErrorLevel.NORMAL, "Lotus Notes NSF file to EML, MBOX and PST file converter.")
         self.log(ErrorLevel.NORMAL, "Contact dbateman@free.fr for more information.\n")
                         
     def openSource(self):
@@ -321,12 +320,8 @@ class Gui(tkinter.Frame):
         
     def check(self):
         if self.Lotus != None :           
-            if self.Outlook != None :
-                self.checked = True
-                self.log(ErrorLevel.NORMAL, "Connection to Notes and Outlook established\n")
-            else :
-                self.unchecked()
-                self.log(ErrorLevel.ERROR, "Check that Outlook is running\n")
+            self.checked = True
+            self.log(ErrorLevel.NORMAL, "Connection to Notes established\n")
         else :
             self.unchecked()
             self.log(ErrorLevel.ERROR, "Check the Notes password\n")
@@ -477,8 +472,6 @@ class Gui(tkinter.Frame):
         else : #Check if all is OK
             try :
                 self.Lotus = win32com.client.Dispatch(r'Lotus.NotesSession')
-                if self.NotesEntries == None :
-                    self.NotesEntries = NotesEntries()
                 # Use rstrip to remove trailing whitespace as not part of the password
                 self.Lotus.Initialize(self.entryPassword.get().rstrip())
                 self.Lotus.ConvertMime = False
@@ -492,22 +485,15 @@ class Gui(tkinter.Frame):
                         break
                 self.Lotus = None
                 
-            try :
-                self.Outlook = win32com.client.Dispatch(r'Outlook.Application')
-            except Exception as ex:
-                self.log(ErrorLevel.ERROR, "Could not connect to Outlook !")
-                self.log(ErrorLevel.ERROR, "Exception %s :" % ex)
-                self.Outlook = None
-                
             self.check()
             if self.checked :
                 self.configDirectoryEntry()
 
     def doConvertDirectory(self):
         tl = self.winfo_toplevel()
-        self.log(ErrorLevel.NORMAL, "Starting Convert : %s " % datetime.datetime.now())
+        self.log(ErrorLevel.NORMAL, "Starting Convert : %s\n" % datetime.datetime.now())
         if self.Format.get() == Format.MBOX  and self.MBOXType.get() == SubdirectoryMBOX.NO :
-            self.log(ErrorLevel.WARN, "The MBOX file will not have the directory hierarchies present in NSF file")
+            self.log(ErrorLevel.WARN, "The MBOX file will not have the directory hierarchies present in NSF file\n")
 
         for src in os.listdir(self.nsfPath) :
             if not self.running :
@@ -550,34 +536,48 @@ class Gui(tkinter.Frame):
             self.log(ErrorLevel.ERROR, "Error connecting to Lotus !")
             self.log(ErrorLevel.ERROR, "Exception %s :" % ex)
             return False
-
-        stat = self.NotesEntries.NSFDbOpen(path)
-        if stat != 0 :
-            raise ValueError('ERROR : Can not open Lotus database %s with C API (ErrorID %d)' % (path, stat))
-            
+             
         if ac <= 0 :
             raise ValueError('ERROR : The database %s appears to be empty. Returning' % src)
-            
+ 
         # Preconvert all messages to MIME before writing EML files as the
         # C DLL might not be finished saving the message before the COM
         # interface tries to access the MIME body. Also the call to mapiex.mapi()
-        # must come after the conversion, as if it doesn't the call to
+        # must come after the conversion, as if it doesn't all the call to
         # MIMEConvertCDParts will raise a "File does not exist error (259)".
-        # ?*#! -> Weird interaction MAPI to Notes  
-        self.log(ErrorLevel.NORMAL, "Starting MIME encoding of messages")
+        # ?*#! -> Weird interaction MAPI to Notes
+        # This also means that the NotesEntries class that loads nnotes.ddl must
+        # be call here rather that only once when starting NSF2X so that it is
+        # reloaded after using mapîex.mapi() for multiple NSF files.
+        #
+        # If "File not found (259)" errors from MIMEConvertCDParts persist then
+        # the call to "win32com.client.Dispatch(r'Lotus.NotesSession')" probably
+        # needs to be in the method realConvert as well, though that will need
+        # thought about reworking the UI. If after that there are still 259 errors
+        # then NSF2X should be rewritten to force the user to relaunch after each
+        # conversion, though that will prevent batch conversion of multiple NSF 
+        # files !!
+        _NotesEntries = NotesEntries()
+        stat = _NotesEntries.NSFDbOpen(path)
+        if stat != 0 :
+            raise ValueError('ERROR : Can not open Lotus database %s with C API (ErrorID %d)' % (path, stat))
+            
+        self.log(ErrorLevel.NORMAL, "Starting MIME encoding of messages")            
         for fld in dBNotes.Views :
             if  not (fld.Name == "($Sent)" or fld.IsFolder) or fld.EntryCount <= 0 :
                 if fld.EntryCount > 0 :
                     tl.title("Lotus Notes Converter - Phase 1/2 Converting MIME (%.1f%%)" % float(10.*c/ac))
                     self.update()
+                if not self.running :
+                    return False
                 continue
             doc = fld.GetFirstDocument()
             while doc and e < 100 : #stop after 100 exceptions...
                 if not self.running :
-                    return
+                    return False
                     
                 try :              
-                    if not self.ConvertToMIME(doc) :
+                    if not self.ConvertToMIME(doc, _NotesEntries) :
                         e+=1
                         self.log(ErrorLevel.ERROR, "Can not convert message %d to MIME" % c)
                 except Exception as ex:
@@ -601,12 +601,18 @@ class Gui(tkinter.Frame):
             f = open (mbox, "wb")
         elif self.Format.get() == Format.PST :
             pst = os.path.join(self.destPath, (dest + ".pst"))
-            ns = self.Outlook.GetNamespace(r'MAPI')
-            
+    
             # FIXME
             # Can't guarantee that MAPISVC.INF contains the service "MSPST MS" and so
             # can't use MAPI to create PST. This is now the only place the Outlook
-            # Object Model is used, and it would be great to get rid of it.
+            # Object Model is used, and it would be great to get rid of it.            
+            try :
+                Outlook = win32com.client.Dispatch(r'Outlook.Application')
+            except Exception as ex:
+                self.log(ErrorLevel.ERROR, "Could not connect to Outlook !")
+                self.log(ErrorLevel.ERROR, "Exception %s :" % ex)
+                Outlook = None
+            ns = Outlook.GetNamespace(r'MAPI')
             self.log(ErrorLevel.NORMAL, "Opening PST file - %s" % pst)     
             ns.AddStore(pst)
             rootFolder = ns.Folders.GetLast()
@@ -630,6 +636,8 @@ class Gui(tkinter.Frame):
                 if fld.EntryCount > 0 :
                     tl.title("Lotus Notes Converter - Phase 2/2 Import Message %d of %d (%.1f%%)" % (c, ac, float(10.*(ac + 9.*c)/ac)))
                     self.update()
+                if not self.running :
+                    return False
                 continue
 
             pstfld = None
@@ -684,7 +692,7 @@ class Gui(tkinter.Frame):
             d=1
             while doc and e < 100 : #stop after 100 exceptions...
                 if not self.running :
-                    return
+                    return False
                     
                 try :
                     eml = None
@@ -705,7 +713,7 @@ class Gui(tkinter.Frame):
                             
                         self.log(errlvl, "Ignoring message %d of form '%s' without MIME body" % (c, form))                        
                         if subject :
-                            self.log (errlvl, "Subject : %s" % subject.Text)
+                            self.log (errlvl, "#### Subject : %s" % subject.Text)
  
                         if errlvl == ErrorLevel.WARN :
                             self.log (errlvl, "Skipping as probably not a message")
@@ -752,7 +760,10 @@ class Gui(tkinter.Frame):
                         except :
                             pass
                     self.log(ErrorLevel.ERROR, "Exception for message %d (%s) :" % (c, ex))
-                    self.log(ErrorLevel.ERROR, "%s" % traceback.format_exc())
+                    self.log(ErrorLevel.ERROR, "%s" % traceback.format_exc())                    
+                    subject = doc.GetFirstItem("Subject")
+                    if subject :
+                        self.log (errlvl, "#### Subject : %s" % subject.Text)
         
                 finally:                  
                     c+=1
@@ -780,14 +791,14 @@ class Gui(tkinter.Frame):
 
         return True
  
-    def ConvertToMIME (self, doc) :
+    def ConvertToMIME (self, doc, _NotesEntries) :
 
         # I'd really like to use doc.UniversalID here to open the file with 
         # NSFNoteOpenByUNID. However, doc.UniversalID is a string and
         # NSFNoteOpenByUNID expects a struct and the conversion between the
         # two doesn't seem easy. Use doc.NoteID instead
-        # stat, hNote = self.NotesEntries.NSFNoteOpenByUNID(doc.UniversalID, self.NotesEntries.OPEN_RAW_MIME)
-        stat, hNote = self.NotesEntries.NSFNoteOpenExt(ctypes.c_uint32(int(doc.NoteID, 16)), self.NotesEntries.OPEN_RAW_MIME)
+        # stat, hNote = _NotesEntries.NSFNoteOpenByUNID(doc.UniversalID, _NotesEntries.OPEN_RAW_MIME)
+        stat, hNote = _NotesEntries.NSFNoteOpenExt(ctypes.c_uint32(int(doc.NoteID, 16)), _NotesEntries.OPEN_RAW_MIME)
 
         if stat != 0 :
              self.log (ErrorLevel.ERROR, "Can not open document id 0x%s (ErrorID : %d)" % (doc.NoteID, stat))
@@ -797,7 +808,7 @@ class Gui(tkinter.Frame):
                 tmp = doc.GetFirstItem("$KeepPrivate")     
                 if tmp != None :
                     self.log(ErrorLevel.INFO, "Removing $KeepPrivate item from note id 0x%s" % doc.NoteID)
-                    self.NotesEntries.NSFItemDelete(hNote, "$KeepPrivate")
+                    _NotesEntries.NSFItemDelete(hNote, "$KeepPrivate")
 
                 # The C API identifies some unencrypted mail as "Sealed". These don't need
                 # to be unencrypted to allow conversion to MIME.
@@ -806,52 +817,52 @@ class Gui(tkinter.Frame):
                     # if the note is encrypted, try to decrypt it. If that fails
                     #(e.g., we don't have the key), then we can't convert to MIME
                     # (we don't care about the signature)
-                    retval, isSigned, isSealed = self.NotesEntries.NSFNoteIsSignedOrSealed(hNote)
+                    retval, isSigned, isSealed = _NotesEntries.NSFNoteIsSignedOrSealed(hNote)
                     if isSealed :
                         self.log (ErrorLevel.INFO, "Document note id 0x%s is encrypted." % doc.NoteID)
                         DECRYPT_ATTACHMENTS_IN_PLACE = ctypes.c_uint16(1);
-                        stat = self.NotesEntries.NSFNoteDecrypt(hNote, DECRYPT_ATTACHMENTS_IN_PLACE);
+                        stat = _NotesEntries.NSFNoteDecrypt(hNote, DECRYPT_ATTACHMENTS_IN_PLACE);
                         
                         if stat != 0 :
                             self.log (ErrorLevel.ERROR, "Document note id 0x%s is encrypted, cannot be converted." % doc.NoteID)
                 
                 if stat == 0 :
                     # if the note is already in mime format, we don't have to convert
-                    if (not self.NotesEntries.NSFNoteHasMIMEPart(hNote)) :
-                        stat, hCC = self.NotesEntries.MMCreateConvControls ()
+                    if (not _NotesEntries.NSFNoteHasMIMEPart(hNote)) :
+                        stat, hCC = _NotesEntries.MMCreateConvControls ()
                         if stat == 0 :
-                            self.NotesEntries.MMSetMessageContentEncoding(hCC, 2) # html w/images & attachments
+                            _NotesEntries.MMSetMessageContentEncoding(hCC, 2) # html w/images & attachments
                             
                             # NOTE_FLAG_CANONICAL = 0x4000 see nsfnote.h
                             _NOTE_FLAGS = ctypes.c_uint16 (7)
-                            bCanonical = (self.NotesEntries.NSFNoteGetInfo (hNote, _NOTE_FLAGS).value) & 0x4000 != 0
-                            bIsMime = self.NotesEntries.NSFNoteHasMIMEPart(hNote)
-                            stat = self.NotesEntries.MIMEConvertCDParts(hNote, bCanonical, bIsMime, hCC)
+                            bCanonical = (_NotesEntries.NSFNoteGetInfo (hNote, _NOTE_FLAGS).value) & 0x4000 != 0
+                            bIsMime = _NotesEntries.NSFNoteHasMIMEPart(hNote)
+                            stat = _NotesEntries.MIMEConvertCDParts(hNote, bCanonical, bIsMime, hCC)
                             
                             if stat == 0 :
                                 UPDATE_FORCE = ctypes.c_uint16(1);
-                                stat = self.NotesEntries.NSFNoteUpdate(hNote, UPDATE_FORCE)
+                                stat = _NotesEntries.NSFNoteUpdate(hNote, UPDATE_FORCE)
                                 if stat != 0 :
                                     self.log(ErrorLevel.ERROR, "Error calling NSFNoteUpdate (%d)" % stat)
                             elif stat == 14941 :
                                 self.log(ErrorLevel.INFO, "MIMEConvertCDParts : Error converting note id 0x%s to MIME type text/html" % doc.NoteID)
                                 self.log(ErrorLevel.INFO, "MIMEConvertCDParts : Attempting to convert to text/plain")
-                                self.NotesEntries.MMSetMessageContentEncoding(hCC, 1)
-                                stat = self.NotesEntries.MIMEConvertCDParts(hNote, bCanonical, bIsMime, hCC)    
+                                _NotesEntries.MMSetMessageContentEncoding(hCC, 1)
+                                stat = _NotesEntries.MIMEConvertCDParts(hNote, bCanonical, bIsMime, hCC)    
                                 
                             if stat != 0 :
                                 self.log (ErrorLevel.ERROR, "Error calling MIMEConvertCDParts (%d)" % stat)
                                 
-                            self.NotesEntries.MMDestroyConvControls(hCC)
+                            _NotesEntries.MMDestroyConvControls(hCC)
                         else :
                             self.log(ErrorLevel.ERROR, "Error calling MMCreateConvControls (%d)" % stat)
                             
                 if hNote != None :
-                    self.NotesEntries.NSFNoteClose(hNote)
+                    _NotesEntries.NSFNoteClose(hNote)
             except :
                 if hNote != None :
                     # Ensure Note is closed and then re-raise the exception
-                    self.NotesEntries.NSFNoteClose(hNote)
+                    _NotesEntries.NSFNoteClose(hNote)
                 raise
         
         return (stat == 0)   
