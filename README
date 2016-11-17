@@ -12,7 +12,7 @@ Quick Start
    3. Optionally, but recommended, launch Outlook
    4. Launch "nsf2x.exe"
    5. Enter the Lotus Notes password
-   6. Press the "Open Session" to open the connection to Notes and Outlook
+   6. Press the "Open Session" to open the connection to Notes
    7. Select the output type: EML, MBOX or PST
    8. Modify the conversion options as wanted
    9. Enter the source path of the temporary location with the "*.nsf" files
@@ -86,11 +86,11 @@ Details
    So that NSF2X can have access to Lotus Notes it needs your Lotus Notes
    password. Enter into the password box of NSF2X
 
-   6. Press the "Open Session" to open the connection to Notes and Outlook
-  ------------------------------------------------------------------------
-   Pressing this button opens the connection to Lotus Notes and to Outlook
-   via a Windows COM interface. At this point the password selection is 
-   deactivated, but the source and destination path entries are activated.
+   6. Press the "Open Session" to open the connection to Notes
+  ------------------------------------------------------------
+   Pressing this button opens the connection to Lotus Notes via a Windows 
+   COM interface. At this point the password selection is  deactivated, but
+   the source and destination path entries are activated.
    
    7. Select the output type: EML, MBOX or PST
   --------------------------------------------
@@ -131,7 +131,7 @@ Details
 
    8. Modify the conversion options as wanted
   -------------------------------------------   
-   Using the "Options" button the user can modify two parameters of NSF2X.
+   Using the "Options" button the user can modify three parameters of NSF2X.
    The options that are be modified are discussed below
    
    Use different MBOXes for each sub-folder :
@@ -174,7 +174,7 @@ Details
    ...................
    This option concerns all conversion types. The possible options are
    
-   Normal : Only display messages that are used show the progress of NSF2X
+   Normal : Only display messages that are used to show the progress of NSF2X
    
    Error : As well as the messages for the progress of NSF2X, display error
    messages
@@ -212,10 +212,10 @@ Details
    
   13. Enjoy
   ---------
-   For large NSF file you're better off going and getting a coffee or going to 
-   bed. You can however lock the screen without interrupting the conversion as long
-   as the NSF and PST files are in locations that NSF2X can access with the screen 
-   locked
+   For large NSF file you're better off going and getting a coffee or going
+   to bed. You can however lock the screen without interrupting the conversion
+   as long as the NSF and PST files are in locations that NSF2X can access
+   with the screen locked
    
    14. Treat any exceptions manually
    ---------------------------------
@@ -267,7 +267,7 @@ Development
    (http://winpython.sf.net) version 3.4. The code should still work with 
    python 2.7 but I'd recommend using at least 3.4
    
-   Note that if you Notes client is 32bit as is mine you'll need to use the 32bit 
+   Note that if your Notes client is 32bit as is mine you'll need to use the 32bit 
    versions of python.
 
    2. Install pywin extensions for Windows from
@@ -342,16 +342,10 @@ Development
    conversion to MIME. However as the Lotus Notes encryption is proprietary the
    encryption can't easily be converted to SMIME and so the existing encryption
    is lost when creating the EML files, though NSF2X can attempts to recreate
-   and SMIME encryption.
-   
-   Lotus Notes seem to have some trouble converting a few legitimate mails to 
-   MIME in this case the message is stored as a simple EML file without 
-   attachments. The problem in this case is the conversion of email addresses
-   in Notes format to a form compatible with EML. This conversion can cause
-   problems, so be careful of the addresses created in this case.
+   an SMIME encrypted mail.
   
-   Only the mail is converted to EML files. All of the calendar events in the
-   NSF file are ignored. The mail is stored as a list of "Views" that can be
+   Only the mail is converted to EML files. All of the calendar events, etc in 
+   the NSF file are ignored. The mail is stored as a list of "Views" that can be
    obtained with the code
    
    import win32com.client
@@ -532,11 +526,12 @@ Development
 
 See also
 --------
-Code based on nlconverter (https://code.google.com/p/nlconverter/) by
-Hugues Bernard <hugues.bernard@gmail.com>. Though there is so little of
-his code left its probably not necessary to treat my program as a derived
-work. Basically all that is left is the Tkinter UI which is much the same. 
-So as to not have to rework the UI, however I treat this code as derived.
+Code based on nlconverter (originnaly athttps://code.google.com/p/nlconverter/
+but now found at https://github.com/kdeldycke/nlconverter) by Hugues Bernard 
+<hugues.bernard@gmail.com>. Though there is so little of his code left its 
+probably not necessary to treat my program as a derived work. Basically all 
+that is left is the Tkinter UI which is much the same. So as to not have to
+rework the UI, however I treat this code as derived.
    
 Another source of inspiration was
 
