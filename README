@@ -245,12 +245,12 @@ Details
    1. Launch CMD.EXE to get a Windows commandline
    2. Identify the location of the exported EML file. For example
 
-      C:/Users/Me/Desktop/Message.eml
+      C:\Users\Me\Desktop\Message.eml
       
    3. Ensure that the executable OUTLOOK.EXE is on your path
    4. Type the command
    
-      OUTLOOK.EXE /eml C:/Users/Me/Desktop/Message.eml
+      OUTLOOK.EXE /eml C:\Users\Me\Desktop\Message.eml
       
    This will pop up a window in Outlook. At this point the message is not in any
    Outlook OST or PST file. However the message can be dragged to the desired folder

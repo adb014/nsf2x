@@ -546,8 +546,8 @@ class Gui(tkinter.Frame):
         # must come after the conversion, as if it doesn't all the call to
         # MIMEConvertCDParts will raise a "File does not exist error (259)".
         # ?*#! -> Weird interaction MAPI to Notes
-        # This also means that the NotesEntries class that loads nnotes.ddl must
-        # be call here rather that only once when starting NSF2X so that it is
+        # This also means that the NotesEntries class that loads nnotes.dll must
+        # be called here rather that only once when starting NSF2X so that it is
         # reloaded after using mapîex.mapi() for multiple NSF files.
         #
         # If "File not found (259)" errors from MIMEConvertCDParts persist then
@@ -618,6 +618,8 @@ class Gui(tkinter.Frame):
             rootFolder = ns.Folders.GetLast()
             rootFolder.Name = dest
             
+            # Reopen the message store created with OOM and only use MAPI from here
+            # on out.
             try :
                 MAPI = mapiex.mapi()        
                 MAPI.OpenMessageStore(dest)
@@ -979,7 +981,7 @@ class Gui(tkinter.Frame):
                                 try :
                                     self.hCryptProv = win32crypt.CryptAcquireContext (None, None, win32cryptcon.PROV_RSA_FULL,  win32cryptcon.CRYPT_SILENT)
                                 except :
-                                    self.log(Errorlevl.ERROR, "Can not open Windows cryptographic provider")
+                                    self.log(Errorlevel.ERROR, "Can not open Windows cryptographic provider")
                         
                         if self.hCryptProv and not self.certificate :
                             hStoreHandle = win32crypt.CertOpenSystemStore("MY", self.hCryptProv)
