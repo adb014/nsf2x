@@ -1,0 +1,320 @@
+NSF2X : A Lotus Notes NSF to EML, MBOX and Outlook PST converter
+dbateman@free.fr
+
+Based on nlconverter (https://code.google.com/p/nlconverter/) by
+Hugues Bernard <hugues.bernard@gmail.com>
+
+This README contains my development notes.
+
+Development
+-----------
+
+   Prerequisites
+   -------------
+   1. Install python 2.x where x is at least 6 or 3.y where y is at least 4. I 
+   personally used Python 2.7 for the development (http://portablepython.com/) 
+   but apparently this is no longer maintained and so switched to WinPython
+   (http://winpython.sf.net) version 3.4. The code should still work with 
+   python 2.7 but I'd recommend using at least 3.4
+   
+   Note that if your Notes client is 32bit as is mine you'll need to use the 32bit 
+   versions of python.
+
+   2. Install pywin extensions for Windows from
+   https://sourceforge.net/projects/pywin32/
+
+   The files to download are in
+   https://sourceforge.net/projects/pywin32/files/pywin32/
+
+   Select the latest build and download and install the version adapted to
+   your version of Python. Yes WinPython already has pywin32 installed, but
+   the version in the WinPython distributions in built without the MAPI
+   interface that will be used.
+
+   3. Install the py2exe extension to allow the creation of nsf2x.exe
+   
+   For Python 2.7 the version to use is at 
+   
+   http://www.py2exe.org
+   
+   while for Python 3.x it is found at 
+ 
+   https://pypi.python.org/pypi/py2exe/
+   
+   Build
+   -----
+   Open a console and run 
+         SET PATH=%PATH%;c:\Python
+         python create_exe.py
+
+   The sub-directory 'dist' now contains the binary distribution, and the
+   file "nsf2x-X.X.X.zip" contains a zip of this directory for distribution.
+   
+   create_exe.py attempts to include all DLLs that are necessary of the use of
+   NSF2X. However, certain DLLs need the license to redistribute them from
+   Microsoft, typically included in VC++. In particular the python library 
+   mfc*.dll and the Microsoft redistributable C DLL msvcr*.dll. Make sure
+   you have the license to distribute these files
+   
+   create_exe.py will attempt to copy these to the directory, but might fail. 
+   If they are absent then you'll need to copy them to the dist directory. 
+   This is complicated by the fact the several versions of these DLLs might be 
+   present on your machine. You need the ones that your version of Python use.
+   If the mfc*.dll and msvcr*.dll were present you can distribute the 
+   created zip file directly, otherwise after copying the files, you'll
+   need to rezip the "dist" directory for distribution.
+
+   Creation of EML Files
+   ---------------------
+   By converting all messages to MIME before writing the EML files we ensure
+   that the formatting of the Lotus RichText is respected and the messages can
+   be transferred as close as possible to the original formatting.
+
+   Lotus Notes supplies the ConvertMime method to convert messages to MIME.
+   However, Lotus in their wisdom decided not to make ConvertMIME available
+   in the COM interface, making it hard but not impossible to use. Basically
+   to get the same functionality the C DLL of Lotus can be "abused" to
+   recreate the functionality of ConvertMIME in COM. I didn't find a way
+   to get the notesID of the created MIME message and so was required to
+   resave the MIME message back to the NSF file, before reopening it in the
+   Lotus COM interface to be used. This means that the process of converting
+   to MIME will modify the NSF file.
+   
+   It is possible to Copy the NotesDocument and convert to MIME in this copy
+   and then delete it after saving. However, when using the MAPI interface the
+   call to win32com.mapi.mapi.MAPIInitialize has the weird side effect of making
+   all calls to MIMEConvertCDParts in Notes return a "File does not exist (259)"
+   error. So I had to pre-convert to MIME and restore in the NSF file before 
+   converting to PST. Very weird and probably an indication of a nasty buffer
+   overflow somewhere.
+   
+   If the content of a mail is encrypted, it must first be decrypted before
+   conversion to MIME. However as the Lotus Notes encryption is proprietary the
+   encryption can't easily be converted to SMIME and so the existing encryption
+   is lost when creating the EML files, though NSF2X can attempts to recreate
+   an SMIME encrypted mail.
+  
+   Only the mail is converted to EML files. All of the calendar events, etc in 
+   the NSF file are ignored. The mail is stored as a list of "Views" that can be
+   obtained with the code
+   
+   import win32com.client
+   session = win32com.client.Dispatch(r'Lotus.NotesSession')
+   session.Initialize(password)
+   session.ConvertMime = False
+   database = session.GetDatabase("", NSFPath + NSFFile)
+   dBViews = database.Views
+   
+   The "Views" that interest us are either a folder, signalled by dbView[n].isFolder,
+   or has a name "$Sent", "$Inbox", "$Draft". The "$Inbox" view is also a folder
+   and we don't transfer the "$Draft" files, so only the "$Sent" view needs
+   special treatment.
+
+   Creation of PST Files
+   --------------------
+   The Windows COM interface doesn't allow certain fields of MailItem objects
+   to be written. Notably the ReceivedTime, and the status of whether a message
+   is sent or not. So the EML files can't be directly copied to an Outlook
+   MailItem. 
+   
+   I used two methods to import the EML files :
+   
+   Using Outlook to import EML files
+   .................................
+
+   Outlook can  open EML files directly from the Windows shell, but
+   can't do it from the COM interface. Therefore, for each EML file I
+   launch an Outlook sub-process with the "/eml" command line flag to ensure
+   that the file is interpreted as EML. As the loaded file will then be in
+   the Active windows of Outlook, NSF2X can grab a MailItem handle to the
+   opened EML file, and move it to the correct place. This also means the
+   temporary EML file will briefly flash on the screen.
+   
+   We can get the opened a Windows "Inspector" to this EML message with the 
+   code
+   
+   import win32com.client
+   application = win32com.client.Dispatch(r'Outlook.Application')
+   inspector = application.ActiveInspector
+   
+   However, open dialog boxes, or menus that appear when hovering the mouse
+   over these message are also "Inspector" objects and so using the 
+   ActiveInpector property can result in the pointer to the wrong object
+   being given. The solution is to iterate of all of the Outlook Inspectors
+   and find the one we want. For example a semi complete solution is to 
+   do
+   
+   import win32com.client
+   application = win32com.client.Dispatch(r'Outlook.Application')
+   doc = dBViews[CurrentView].GetFirstDocument()
+   while doc != None :
+       ...   
+       writeMIMEFile(doc, eml)
+       
+       subprocess.call([PathToOutlook, "/eml", eml])
+
+       m = None
+       for inspector in application.Inspectors :
+           _m = win32com.client.CastTo (inspector.CurrentItem, "_MailItem")
+           if SameMessage (doc, _m) :
+               m = _m
+               break
+       if m == None :
+           raise IOError("Can't find open EML message from Outlook")
+       else :
+          m.move(DestPSTFolder)
+          m.close (1)   # Flag 1 -> copy is not saved in the default Inbox
+       
+       ...
+       doc = dBViews[CurrentView].GetNextDocument(doc)
+
+   The "SameMessage" function tests a number of fields of the current Lotus
+   document against the opened EML file to see that they are the same. I used
+   the Sender and SentOn fields as accents in the Subject field caused some
+   issues.
+
+   Using Extended MAPI IConverter function
+   .......................................
+   
+   The package "Redemption" can apparently load an EML file directly to a 
+   MailItem, but as it a commercial product, using it would prevent 
+   distribution of this package.
+   
+   The solution is the IConverter:MIMEToMAPI function, though this requires
+   the use of the extended MAPI interface. The code at 
+   
+   http://www.codeproject.com/internet/CMapiEx.asp
+
+   was used to inspire the extended MAPI interface to the win32com.mapi 
+   module and the MIMEToMAPI documentation at
+   
+   https://msdn.microsoft.com/fr-fr/library/office/ff960604.aspx
+   
+   was used. This is the means used by NSF2X to import EML messages to PST
+   
+   Re-encrypting mail
+   ..................
+   
+   The website
+   
+   https://blogs.msdn.microsoft.com/webdav_101/2015/12/16/about-encrypting-or-signing-a-message-programmatically/
+   
+   gives a very good overview of the techniques of encrypting mail on
+   Windows platforms. The easiest is to encrypt an Outlook MailItem 
+   directly with the code
+   
+   enc = doc.GetFirstItem("Encrypt")
+   if enc != None and enc.Text == '1' : 
+       m1.PropertyAccessor.SetProperty("http://schemas.microsoft.com/mapi/proptag/0x6E010003", 1)
+       
+   Where the object "m1" is the MailItem containing the EML converted version of 
+   the Lotus Notes object "doc". This must occur before the 
+   "m1.move(DestPSTFolder)" or "m1.Save()" must be called to allow the encryption 
+   to be performed.
+   
+   The problem with the encryption is that it relies on the users Outlook
+   address book have the certificates for all the senders and recipients of 
+   encrypted mails. These certificates can be in the form of a local contact
+   or the "Global Address List" of the Exchange server. Otherwise NSF2X
+   will cause Outlook to present the user is a dialog asking them how to
+   treat the missing certificate, with no way to automate the selection of
+   the correct option, as NSF2X is blocked by the dialog.
+   
+   This is annoying as the main use case for NSF2X is importing mail archives
+   that might be relatively old, and with the number of people arriving and
+   departing the company, the encrypted messages risks to have one or more
+   users with a missing certificates. There are only nasty ways of treating 
+   this issue.
+   
+   Another solution is to re-encrypt in SMIME directly in the EML files with
+   code like at
+   
+   https://msdn.microsoft.com/en-us/library/windows/desktop/aa382376(v=vs.85).aspx
+   
+   This has an immediate advantage in that encryption can be included in MBOX
+   and EML formats. The disadvantage however is that the certificates of the
+   sender and other recipients may not be available.
+
+   In general an encrypted email is encrypted with each of the recipients and
+   senders X509 certificates, and this is what Outlook attempts to do if you
+   encrypt with the technique above. However, if we make the assumption that
+   only the user of NSF2X will be reading the encrypted mails we can re-encrypt
+   the mails only with their certificate, and in this manner bypass all of the
+   issues of people that have left the company.
+   
+   If the user tries for example to transfer or respond to the converted mail,
+   their mail client will deal with the encryption to the new recipients, and
+   so the only constraint with this technique is that the person that will use
+   the archive has to do the conversion themselves
+   
+   The following steps are used for the conversion
+   
+   1. Acquire an encryption context that supports RSA encryption with win32crypt
+   2. Enumerate all of the certificates in the certificate store of the context
+      and identify the first certificate that we have the private certificate for
+      and that is flagged with AT_KEYEXCHANGE, that signals that we can use this
+      certificate for the encryption of mail
+   3. Create a MIME version of the message in a memory buffer 
+   4. Use the win32crypt function CryptEncryptMessage to convert the memory buffer
+      to an SMIME encrypted blob
+   5. Write the SMIME Content-Type header "application/x-pkcs7-mime" to the EML
+      message followed by the SMIME encrypted blob in base64 format
+     
+   Creation of MBOX files
+   ----------------------
+   MBOX files don't include a folder structure and so it is impossible to
+   create the NSF Folder structure within a single MBOX file. So the solution
+   (used in Thunderbird by the way) is to create and MBOX file per
+   sub-directory
+   
+   The messages of an MBOX file are recognized by the fact they start with
+   "\nFrom". That is each new message is separated by a newline character
+   and the From field is the first field of the header. The EML files are
+   written with the From field first to simplify this. As "\nFrom" might
+   appear in a real message, the use of MIME ensures that these uses of
+   "\nFrom" won't be incorrectly interpreted.
+
+See also
+--------
+Code based on nlconverter (originnaly athttps://code.google.com/p/nlconverter/
+but now found at https://github.com/kdeldycke/nlconverter) by Hugues Bernard 
+<hugues.bernard@gmail.com>. Though there is so little of his code left its 
+probably not necessary to treat my program as a derived work. Basically all 
+that is left is the Tkinter UI which is much the same. So as to not have to
+rework the UI, however I treat this code as derived.
+   
+Another source of inspiration was
+
+http://www.bobzblog.com/tuxedoguy.nsf/dx/calling-notes-capi-from-cvisual-studio
+
+and 
+
+http://www.bobzblog.com/tuxedoguy.nsf/dx/geek-o-terica-16-easy-conversion-of-notes-documents-to-mime-format-part-2
+
+though the code here was a bit naive and didn't treat a hierarchy of 
+embedded MIME objects correctly. This source did however give the manner
+of abusing the C DLL nnotes.dll so as to recreate the MIMEConvert 
+functionality.
+
+Copyright
+---------
+
+As a derivative program it inherits the same license (i.e. GPL v2)
+
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+
+# Copyright (C) 2016 Free Software Foundation
+# Author : Hugues Bernard <hugues.bernard@gmail.com>
+# Author : David Bateman <dbateman@free.fr>

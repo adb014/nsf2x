@@ -564,7 +564,7 @@ class Gui(tkinter.Frame):
             
         self.log(ErrorLevel.NORMAL, "Starting MIME encoding of messages")            
         for fld in dBNotes.Views :
-            if  not (fld.Name == "($Sent)" or fld.IsFolder) or fld.EntryCount <= 0 :
+            if  not (fld.Name == "($Sent)" or fld.Name == "($Calendar)" or fld.IsFolder) or fld.EntryCount <= 0 :
                 if fld.EntryCount > 0 :
                     tl.title("Lotus Notes Converter - Phase 1/2 Converting MIME (%.1f%%)" % float(10.*c/ac))
                     self.update()
@@ -706,7 +706,7 @@ class Gui(tkinter.Frame):
                             form = "None"
                         else :
                             form = form.Text
-                        if form in ("Notice", "Return Receipt", "Trace Report", "Appointment", "Delivery Report") :
+                        if form in ("Appointment", "Notice", "Return Receipt", "Trace Report", "Delivery Report") :
                             # These are clearly not messages, so ok to ignore them
                             errlvl = ErrorLevel.WARN
                         else :
@@ -972,17 +972,19 @@ class Gui(tkinter.Frame):
                         if not self.hCryptoProv :
                             try :
                                 self.hCryptProv = win32crypt.CryptAcquireContext (None, None, win32cryptcon.PROV_RSA_AES,  win32cryptcon.CRYPT_SILENT)
-                            except :
+                            except Exception as ex :
                                 enc = self.Encrypt.get()
                                 if enc == EncryptionType.AES128 or enc == EncryptionType.AES256 :
                                     self.log(ErrorLevel.ERROR, "Windows cryptographic provider does not support AES encryption")
+                                    self.log(ErrorLevel.ERROR, "Exception for message (%s) :" % ex)  
                                     self.log(ErrorLevel.ERROR, "Falling back to 3DES 168bit encryption")
                                     self.Encrypt.set(EncryptionType.DES)
                                 try :
                                     self.hCryptProv = win32crypt.CryptAcquireContext (None, None, win32cryptcon.PROV_RSA_FULL,  win32cryptcon.CRYPT_SILENT)
-                                except :
-                                    self.log(Errorlevel.ERROR, "Can not open Windows cryptographic provider")
-                        
+                                except Exception as ex:
+                                    self.log(Errorlevel.ERROR, "Can not open Windows cryptographic provider")                    
+                                    self.log(ErrorLevel.ERROR, "Exception for message (%s) :" % ex)                                    
+                                                           
                         if self.hCryptProv and not self.certificate :
                             hStoreHandle = win32crypt.CertOpenSystemStore("MY", self.hCryptProv)
                         

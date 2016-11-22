@@ -23,6 +23,7 @@ import py2exe
 import os
 import zipfile
 import sys
+import subprocess
 
 class Target(object):
     '''Target is the baseclass for all executables that are created.
@@ -53,11 +54,29 @@ class Target(object):
     def __setitem__(self, name, value):
         self.__dict__[name] = value
 
+def which(program):
+    def is_exe(fpath):
+        return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
+
+    fpath, fname = os.path.split(program)
+    if fpath:
+        if is_exe(program):
+            return program
+    else:
+        for path in os.environ["PATH"].split(os.pathsep):
+            path = path.strip('"')
+            exe_file = os.path.join(path, program)
+            if is_exe(exe_file):
+                return exe_file
+
+    return None
+    
 def main () :
     RT_BITMAP = 2
     RT_MANIFEST = 24
 
-    version = "1.2.6"
+    version = "1.2.7"
+    author = "dbateman@free.fr"
     description="NSF2X - Converts Lotus NSF files to EML, MBOX or PST files..."
     
     # A manifest which specifies the executionlevel
@@ -185,11 +204,11 @@ def main () :
           description=description,
           
           # author contact details
-          author='dbateman@free.fr',
-          url='mailto:dbateman@free.fr',
+          author=author,
+          url='mailto:' + author,
           
           # data files to include
-          data_files=[(".", ("README",)), ("src", ("create_exe.py", "nsf2x.py", "mapiex.py", "testmapiex.py"))],
+          data_files=[(".", ("README.txt", "LICENSE")), ("src", ("create_exe.py", "nsf2x.py", "nsf2x.nsi", "mapiex.py", "testmapiex.py", "README.dev"))],
 
           # py2exe options
           zipfile=None,
@@ -202,7 +221,15 @@ def main () :
             _file = os.path.join(root, file)
             _arcname = "nsf2x" + _file[4:]
             zf.write (_file, _arcname)
-    zf.close()    
+    zf.close()
+
+    # Run NSIS to create the installer. Prefer the portable version if installed
+    makensis=which("NSISPortable.exe")
+    if not makensis :
+        makensis=which("makensis.exe")
+    if not makensis :
+        raise "Can not find NSIS executable on your path"
+    subprocess.call([makensis, "-DVERSION=" + version, "-DPUBLISHER=" + author, "nsf2x.nsi"])
     
 if len(sys.argv) == 1:
     sys.argv.append("py2exe")
