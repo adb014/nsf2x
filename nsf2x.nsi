@@ -174,7 +174,7 @@ ${EndIf}
 ; Check to see if already installed
 ReadRegStr $R0 SHCTX "Software\Microsoft\Windows\CurrentVersion\Uninstall\${UNINSTKEY}" "UninstallString"
 ${If} $R0 != "" 
-    MessageBox MB_OKCANCEL|MB_TOPMOST "NSF2X version  ${VERSION} is already installed. Launch the uninstaller?"  IDOK Ok IDCANCEL Cancel
+    MessageBox MB_OKCANCEL|MB_TOPMOST "NSF2X version ${VERSION} is already installed. Launch the uninstaller?"  IDOK Ok IDCANCEL Cancel
     Cancel:
     Quit
 

@@ -20,13 +20,11 @@
 # Very loosely based on nlconverter (https://code.google.com/p/nlconverter/) 
 # by Hugues Bernard <hugues.bernard@gmail.com>
 
-import time
 import datetime
 import codecs
 import os
 import io
 import ctypes
-import subprocess
 import traceback
 import tempfile
 import win32com.client #NB : Calls to COM are starting with an uppercase
@@ -47,7 +45,7 @@ except :
 import mapiex
 
 #FIXME this list should be extended to match regular install paths
-notesDllPathList = [r'c:/notes', r'd:/notes', r'c:/program files/notes', r'd:/program files/notes', r'c:/program files (x86)/notes', r'd:/program files (x86)/notes']
+notesDllPathList = [r'c:/notes', r'd:/notes', r'c:/program files/notes', r'd:/program files/notes', r'c:/program files (x86)/notes', r'd:/program files (x86)/notes', r'c:/program files/ibm/notes', r'd:/program files/ibm/notes', r'c:/program files (x86)/ibm/notes', r'd:/program files (x86)/ibm/notes']
 
 # The following classes are a means of creating a simple ENUM functionality
 # Use list(range()) for Python 2.7 and 3.x compatibility
@@ -94,11 +92,18 @@ class NotesEntries(object) :
                 self.nnotesdll = None
         else :
             self.nnotesdll = None
-            for p in notesDllPathList :
-                fp = os.path.join(p, 'nnotes.dll')
-                if os.path.exists(fp) :
-                    self.nnotesdll = ctypes.WinDLL(fp)
-                    break
+            try :
+                # If we already have the COM/DDE interface to Notes, then nlsxbe.dll
+                # is already loaded, so we can just try and get nnotes.dll leaving
+                # Windows to search in its default search path
+                self.nnotesdll = ctypes.WinDLL('nnotes.dll')
+            except :
+                # Try harder 
+                for p in notesDllPathList :
+                    fp = os.path.join(p, 'nnotes.dll')
+                    if os.path.exists(fp) :
+                        self.nnotesdll = ctypes.WinDLL(fp)
+                        break
       
     def isLoaded (self, raiseError = True, TestDb = True) :
         if raiseError :
@@ -252,18 +257,10 @@ class Gui(tkinter.Frame):
         self.MBOXType.set(SubdirectoryMBOX.YES)
         self.ErrorLevel = tkinter.IntVar()
         self.ErrorLevel.set(ErrorLevel.ERROR)
-        
-        #Source chooser
-        self.chooseNsfButton = tkinter.Button(self.master, text="Select Directory of SOURCE nsf files", command= self.openSource, relief =tkinter.GROOVE, state = tkinter.DISABLED)
-        self.chooseNsfButton.grid(row=3,column=1, columnspan=2, sticky=tkinter.E+tkinter.W)
-
-        #Destination chooser
-        self.chooseDestButton = tkinter.Button(self.master, text="Select Directory of DESTINATION files", command= self.openDestination, relief =tkinter.GROOVE, state = tkinter.DISABLED)
-        self.chooseDestButton.grid(row=3,column=3, columnspan=2, sticky=tkinter.E+tkinter.W)        
-        
+                
         #Lotus Password
         tkinter.Label(self.master, text="Enter Lotus Notes password").grid(row=1, column=1, sticky=tkinter.W)
-        self.entryPassword = tkinter.Entry(self.master, relief=tkinter.GROOVE) #, show="*")
+        self.entryPassword = tkinter.Entry(self.master, relief=tkinter.GROOVE)
         self.entryPassword.insert(0, "Enter Lotus Notes password")
         self.entryPassword.grid(row=1,column=1, columnspan=2, sticky=tkinter.E+tkinter.W)
         self.entryPassword.bind("<FocusIn>", self.bindEntry)
@@ -284,6 +281,14 @@ class Gui(tkinter.Frame):
         self.optionsButton = tkinter.Button(self.master, text="Options", command=self.doOptions, relief=tkinter.GROOVE, state = tkinter.DISABLED)
         self.optionsButton.grid(row=2,column=4, sticky=tkinter.E+tkinter.W)
         
+        #Source chooser
+        self.chooseNsfButton = tkinter.Button(self.master, text="Select Directory of SOURCE nsf files", command= self.openSource, relief =tkinter.GROOVE, state = tkinter.DISABLED)
+        self.chooseNsfButton.grid(row=3,column=1, columnspan=2, sticky=tkinter.E+tkinter.W)
+
+        #Destination chooser
+        self.chooseDestButton = tkinter.Button(self.master, text="Select Directory of DESTINATION files", command= self.openDestination, relief =tkinter.GROOVE, state = tkinter.DISABLED)
+        self.chooseDestButton.grid(row=3,column=3, columnspan=2, sticky=tkinter.E+tkinter.W)        
+
         #Message Area
         frame = tkinter.Frame(self.master)
         frame.grid(row=4, column=1, columnspan=4)
@@ -412,7 +417,7 @@ class Gui(tkinter.Frame):
         R2 = tkinter.Radiobutton(self.dialog, text="Yes", variable=self.MBOXType, value=SubdirectoryMBOX.YES)
         R2.grid(row=2, column=3, columnspan=2, sticky=tkinter.W)
         
-        S1 = ttk.Separator(self.dialog, orient=tkinter.HORIZONTAL).grid(row=3, columnspan=5, sticky=tkinter.E+tkinter.W)
+        ttk.Separator(self.dialog, orient=tkinter.HORIZONTAL).grid(row=3, columnspan=5, sticky=tkinter.E+tkinter.W)
         
         L2 = tkinter.Label (self.dialog, text="Re-encryption of encrypted Notes messages :")
         L2.grid(row=4, column=1, columnspan=4, sticky=tkinter.W)
@@ -432,22 +437,19 @@ class Gui(tkinter.Frame):
         R7 = tkinter.Radiobutton(self.dialog, text="AES 256bit", variable=self.Encrypt, value=EncryptionType.AES256)
         R7.grid(row=6, column=3, columnspan = 2, sticky=tkinter.W)
         
-        S2 = ttk.Separator(self.dialog, orient=tkinter.HORIZONTAL).grid(row=7, columnspan=5, sticky=tkinter.E+tkinter.W)
+        ttk.Separator(self.dialog, orient=tkinter.HORIZONTAL).grid(row=7, columnspan=5, sticky=tkinter.E+tkinter.W)
         
         L3 = tkinter.Label (self.dialog, text="Error logging level :")
         L3.grid(row=8, column=1, columnspan=4, sticky=tkinter.W)
-
-        R7 = tkinter.Radiobutton(self.dialog, text="Normal", variable=self.ErrorLevel, value=ErrorLevel.NORMAL)
-        R7.grid(row=9, column=1, sticky=tkinter.W)
         
         R8 = tkinter.Radiobutton(self.dialog, text="Error", variable=self.ErrorLevel, value=ErrorLevel.ERROR)
-        R8.grid(row=9, column=2, sticky=tkinter.W)
+        R8.grid(row=9, column=1, sticky=tkinter.W)
 
         R9 = tkinter.Radiobutton(self.dialog, text="Warning", variable=self.ErrorLevel, value=ErrorLevel.WARN)
-        R9.grid(row=9, column=3, sticky=tkinter.W)
+        R9.grid(row=9, column=2, sticky=tkinter.W)
         
         R10 = tkinter.Radiobutton(self.dialog, text="Information", variable=self.ErrorLevel, value=ErrorLevel.INFO)
-        R10.grid(row=9, column=4, sticky=tkinter.W)
+        R10.grid(row=9, column=3, columnspan=2, sticky=tkinter.W)
         
         B1 = tkinter.Button(self.dialog, text="Close", command=self.closeOptions, relief=tkinter.GROOVE)
         B1.grid(row=10,column=2, columnspan=2, sticky=tkinter.E+tkinter.W)
@@ -564,7 +566,7 @@ class Gui(tkinter.Frame):
             
         self.log(ErrorLevel.NORMAL, "Starting MIME encoding of messages")            
         for fld in dBNotes.Views :
-            if  not (fld.Name == "($Sent)" or fld.Name == "($Calendar)" or fld.IsFolder) or fld.EntryCount <= 0 :
+            if  not (fld.Name == "($Sent)" or fld.IsFolder) or fld.EntryCount <= 0 :
                 if fld.EntryCount > 0 :
                     tl.title("Lotus Notes Converter - Phase 1/2 Converting MIME (%.1f%%)" % float(10.*c/ac))
                     self.update()
@@ -706,14 +708,25 @@ class Gui(tkinter.Frame):
                             form = "None"
                         else :
                             form = form.Text
+                        empty = False
                         if form in ("Appointment", "Notice", "Return Receipt", "Trace Report", "Delivery Report") :
                             # These are clearly not messages, so ok to ignore them
                             errlvl = ErrorLevel.WARN
                         else :
-                            errlvl = ErrorLevel.ERROR
-                            e += 1                    
+                            body =  doc.GetFirstItem("Body")
+                            if not body or body.ValueLength <= 0 :
+                                errlvl = ErrorLevel.WARN
+                                empty = True
+                            else :
+                                errlvl = ErrorLevel.ERROR
+                                e += 1                    
                             
-                        self.log(errlvl, "Ignoring message %d of form '%s' without MIME body" % (c, form))                        
+                        if empty :
+                            self.log(errlvl, "Ignoring message %d of form '%s' with empty body" % (c, form))
+                        else :
+                            self.log(errlvl, "Ignoring message %d of form '%s' without MIME body" % (c, form))
+
+                        
                         if subject :
                             self.log (errlvl, "#### Subject : %s" % subject.Text)
  
@@ -737,8 +750,7 @@ class Gui(tkinter.Frame):
                             d+=1
                             if self.Format.get() == Format.PST :                            
                                 f.close ()
-                                message = pstfld.ImportEML(eml)
-                                del message   # Explicitly delete the message so IUnknown:Release is called 
+                                pstfld.ImportEML(eml)
 
                                 # Done with the temporary EML file. Remove it
                                 if eml != None :
@@ -871,7 +883,6 @@ class Gui(tkinter.Frame):
         
     def WriteMIMEHeader (self, f, mime) :
          if mime != None :
-            contentType = mime.ContentType;
             headers = mime.Headers;
             encoding = mime.Encoding;
             
@@ -904,9 +915,9 @@ class Gui(tkinter.Frame):
     
     def WriteMIMEChildren (self, f, mime, first) :
         if mime != None :
-            contentType = mime.ContentType;
-            headers = mime.Headers;
-            encoding = mime.Encoding;
+            contentType = mime.ContentType
+            headers = mime.Headers
+            encoding = mime.Encoding
             
             # if it's a binary part, force it to b64
             if (encoding == 1730 or encoding == 1729) :  
@@ -968,25 +979,39 @@ class Gui(tkinter.Frame):
                     if enc != None and enc.Text == '1' :
                         # See https://msdn.microsoft.com/en-us/library/windows/desktop/aa382376(v=vs.85).aspx
                         # Note that the PROV_RSA_AES provider supplies RC2, RC4 and AES encryption whereas as 
-                        # the PROV_RSA_FULL provider only gives RC2 and RC4 encryption.
+                        # the PROV_RSA_FULL provider only gives RC2 and RC4 encryption. Try all possible combinations
+                        # of providers to try and get a valid provider. Don't try and create a new provider
+                        # however as we want a key that the user actually uses.
                         if not self.hCryptoProv :
-                            try :
-                                self.hCryptProv = win32crypt.CryptAcquireContext (None, None, win32cryptcon.PROV_RSA_AES,  win32cryptcon.CRYPT_SILENT)
-                            except Exception as ex :
-                                enc = self.Encrypt.get()
+                            # Loop through the various provider names, that are associated with PROV_RSA_AES
+                            for prov in (win32cryptcon.MS_ENH_RSA_AES_PROV, None) :
+                                try :
+                                    self.hCryptoProv = win32crypt.CryptAcquireContext (None, prov, win32cryptcon.PROV_RSA_AES,  win32cryptcon.CRYPT_SILENT)
+                                    break
+                                except Exception as ex :
+                                    self.log(ErrorLevel.ERROR, "Exception : %s", ex)
+                                    pass
+                                    
+                            if not self.hCryptoProv :
                                 if enc == EncryptionType.AES128 or enc == EncryptionType.AES256 :
-                                    self.log(ErrorLevel.ERROR, "Windows cryptographic provider does not support AES encryption")
-                                    self.log(ErrorLevel.ERROR, "Exception for message (%s) :" % ex)  
+                                    self.log(ErrorLevel.ERROR, "Windows cryptographic provider does not support AES encryption") 
                                     self.log(ErrorLevel.ERROR, "Falling back to 3DES 168bit encryption")
                                     self.Encrypt.set(EncryptionType.DES)
-                                try :
-                                    self.hCryptProv = win32crypt.CryptAcquireContext (None, None, win32cryptcon.PROV_RSA_FULL,  win32cryptcon.CRYPT_SILENT)
-                                except Exception as ex:
-                                    self.log(Errorlevel.ERROR, "Can not open Windows cryptographic provider")                    
-                                    self.log(ErrorLevel.ERROR, "Exception for message (%s) :" % ex)                                    
-                                                           
-                        if self.hCryptProv and not self.certificate :
-                            hStoreHandle = win32crypt.CertOpenSystemStore("MY", self.hCryptProv)
+                                    
+                                # Loop through the various provider names, that are associated with PROV_RSA_FULL
+                                for prov in (win32cryptcon.MS_ENHANCED_PROV, win32cryptcon.MS_STRONG_PROV, win32cryptcon.MS_DEF_PROV, None) :
+                                    try :
+                                        self.hCryptoProv = win32crypt.CryptAcquireContext (None, prov, win32cryptcon.PROV_RSA_FULL,  win32cryptcon.CRYPT_SILENT)
+                                        break
+                                    except Exception as ex :
+                                        self.log(ErrorLevel.ERROR, "Exception : %s", ex)
+                                        pass
+                            
+                            if not self.hCryptoProv :
+                                self.log(ErrorLevel.ERROR, "Can not open Windows cryptographic provider")                    
+                                                                       
+                        if self.hCryptoProv and not self.certificate :
+                            hStoreHandle = win32crypt.CertOpenSystemStore("MY", self.hCryptoProv)
                         
                             for cert in hStoreHandle.CertEnumCertificatesInStore() :
                                 try :
@@ -1002,8 +1027,8 @@ class Gui(tkinter.Frame):
                             if not self.certificate :
                                 self.log(ErrorLevel.ERROR, "Could not obtain the users Exchange certificate.")
                                         
-                        if not self.hCryptProv or not self.certificate :
-                            self.log(Errorlevel.ERROR, "Disabling all encryption !!")
+                        if not self.hCryptoProv or not self.certificate :
+                            self.log(ErrorLevel.ERROR, "Disabling all encryption !!")
                             self.WriteMIMEChildren (f, mE, True)
                             self.Encrypt.set(EncryptionType.NONE)                            
                         else :
@@ -1017,6 +1042,7 @@ class Gui(tkinter.Frame):
                             elif self.Encrypt.get() == EncryptionType.DES :
                                 EncryptAlgorithm = {"ObjId" : win32cryptcon.szOID_RSA_DES_EDE3_CBC, "Parameters" : None}
                             elif self.Encrypt.get() == EncryptionType.AES128 :
+                                # FIXME
                                 # Why does win32cryptcon not define szOID_NIST_AES128_CBC and szOID_NIST_AES256_CBC ???
                                 # szOID_NIST_AES128_CBC = "2.16.840.1.101.3.4.1.2"
                                 # szOID_NIST_AES256_CBC = "2.16.840.1.101.3.4.1.42"
@@ -1025,7 +1051,7 @@ class Gui(tkinter.Frame):
                                 EncryptAlgorithm = {"ObjId" : "2.16.840.1.101.3.4.1.42", "Parameters" : None}
                             else :
                                 raise NameError ("Unrecognised encryption selected")  # This shouldn't be possible 
-                            EncryptParams= {"MsgEncodingType" : EncodingType, "CryptProv" : self.hCryptProv, "ContentEncryptionAlgorithm" : EncryptAlgorithm}
+                            EncryptParams= {"MsgEncodingType" : EncodingType, "CryptProv" : self.hCryptoProv, "ContentEncryptionAlgorithm" : EncryptAlgorithm}
                             blob = win32crypt.CryptEncryptMessage (EncryptParams, [self.certificate], f2.getvalue())
                             
                             f.write(b'Content-Type: application/x-pkcs7-mime;smime-type=enveloped-data;name="smime.p7m"\n')

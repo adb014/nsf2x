@@ -41,10 +41,14 @@ Details
 
    0. Install/Unzip the downloaded package on a Windows machine
   -------------------------------------------------------------
-   Well if you're reading this then you've probably already done this. If you
-   haven't already guessed, this program relies on a number of Windows features,
-   notably the COM interface of Notes and Outlook as well as Outlook itself.
-   These being Windows only, no this program won't work under Linux.
+   Well if you're reading this then you've probably already done this. The
+   binary releases are available from
+   
+   https://github.com/adb014/nsf2x/releases
+   
+   If you haven't already guessed, this program relies on a number of Windows
+   features, notably the COM interface of Notes and Outlook as well as Outlook
+   itself. These being Windows only, no this program won't work under Linux.
    
    The installer permits NSF2X to be installed for the current users or all
    users. However, you must have administration privileges to be able to 
@@ -178,9 +182,7 @@ Details
    Error logging level
    ...................
    This option concerns all conversion types. The possible options are
-   
-   Normal : Only display messages that are used to show the progress of NSF2X
-   
+
    Error : As well as the messages for the progress of NSF2X, display error
    messages
    
@@ -228,14 +230,17 @@ Details
    transformed into MIME by Lotus. It is also possible that an unexpected
    error might occur. Hopefully, this will be very rare or not occur at all,
    but if it does the output of NSF2X will tell the user the number of 
-   exceptions of this type at the end of its execution of each NSF file.
+   exceptions of this type at the end of its execution of each NSF file. The
+   number of "untreated" documents are messages that NSF2X knows are not
+   mails and are not treated (for example delivery failure reports, replies
+   to "Appointments", etc)
    
    The messages that weren't transferred from Lotus will have their subjects 
    printed to the log window with the prefix
    
    #### Subject :  ...
    
-   This can be used to identify the untransferred message in the Lotus NSF 
+   This can be used to identify the untransferred messages in the Lotus NSF 
    interface. Don't despair these messages are not lost and can be transferred
    manually.
    

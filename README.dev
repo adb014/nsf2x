@@ -41,6 +41,10 @@ Development
  
    https://pypi.python.org/pypi/py2exe/
    
+   4. Install the NSIS installer package. I used the version at
+   
+   http://portableapps.com/apps/development/nsis_portable
+   
    Build
    -----
    Open a console and run 
@@ -48,7 +52,8 @@ Development
          python create_exe.py
 
    The sub-directory 'dist' now contains the binary distribution, and the
-   file "nsf2x-X.X.X.zip" contains a zip of this directory for distribution.
+   files "nsf2x-X.X.X.zip"  and "nsf2x-1.2.7-setup.exe" contains a zip
+   and installer of this directory for distribution.
    
    create_exe.py attempts to include all DLLs that are necessary of the use of
    NSF2X. However, certain DLLs need the license to redistribute them from

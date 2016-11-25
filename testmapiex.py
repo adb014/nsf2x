@@ -3,30 +3,21 @@ import mapiex
 # Change these to something valid before running !!!!
 eml = 'PATH TO EML FILE'
 storename = 'VALID MAPI STORE NAME'
-dirname = 'VALID MAPI DIRECTORY NAME RO CREATE IN STORE'
+dirname = 'VALID MAPI DIRECTORY NAME TO CREATE IN STORE'
 
 # Test of enumeration of the message stores that are opened
 def EnumerateMessageStore (MAPI) :
-    messagestorestable = MAPI._GetContents ()
-    while True:
-        rows = messagestorestable.QueryRows(1, 0)
-        #if this is the last row then stop
-        if len(rows) != 1:
-            break
-        row = rows[0]
-        # unpack the row and print name of the message store
-        (eid_tag, eid), (name_tag, name), (def_store_tag, def_store) = row
+    for name in MAPI.GetMessageStoreNames() :
         print("Store Name : %s" % name)
 
 # Enumeration of the subfolders of a messagestore      
-def EnumerateSubFolders (folder) :
+def EnumerateSubFolders (folder, indent="") :
     f = folder.GetFirstSubFolder ()
     while f != None :
-        print("SubFolder : %s" % f.name)
-        EnumerateSubFolders (f)
+        print("%sSubFolder : %s" % (indent, f.name))
+        EnumerateSubFolders (f, indent + "  ")
         f = folder.GetNextSubFolder ()
     
-
 MAPI = mapiex.mapi()
 
 print("Profile Name : %s " % MAPI.GetProfileName())

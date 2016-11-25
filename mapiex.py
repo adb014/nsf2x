@@ -270,6 +270,20 @@ class mapi (object) :
                                     win32com.mapi.mapitags.PR_DEFAULT_STORE),0)
         return self.messagestorestable
 
+    def GetMessageStoreNames (self) :
+        Names = []
+        self._GetContents ()
+        while True:
+            rows = self.messagestorestable.QueryRows(1, 0)
+            #if this is the last row then stop
+            if len(rows) != 1:
+                break
+            row = rows[0]
+            # unpack the row and print name of the message store
+            (eid_tag, eid), (name_tag, name), (def_store_tag, def_store) = row
+            Names.append (name)           
+        return Names
+    
     def OpenMessageStore (self, storename = None) :
         self.msgstore = None
         row = None
