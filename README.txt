@@ -77,7 +77,7 @@ Details
    
    for more information.
    
-   C/ Continue the installation of NSF2x knowing that the conversion to PST 
+   C/ Continue the installation of NSF2X knowing that the conversion to PST 
    files will not be possible
    
    D/ Don't use NSF2X

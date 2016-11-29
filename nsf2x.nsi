@@ -337,7 +337,7 @@ WriteRegStr SHCTX "Software\Microsoft\Windows\CurrentVersion\Uninstall\${UNINSTK
 ${If} $InstallAllUsers  == ${BST_CHECKED}
     WriteRegStr SHCTX "Software\Microsoft\Windows\CurrentVersion\Uninstall\${UNINSTKEY}" "UninstallString" '"$InstDir\uninstall.exe" /ALL'
 ${Else}
-    WriteRegStr SHCTX "Software\Microsoft\Windows\CurrentVersion\Uninstall\${UNINSTKEY}" "UninstallString" '"$InstDir\uninstall.exe"'
+    WriteRegStr SHCTX "Software\Microsoft\Windows\CurrentVersion\Uninstall\${UNINSTKEY}" "UninstallString" '"$InstDir\uninstall.exe" /USER'
 ${EndIf}
 
 ${GetSize} "$INSTDIR" "/S=0K" $0 $1 $2
@@ -399,7 +399,7 @@ FunctionEnd
 Section "Uninstall"
 ReadRegStr $R0 SHCTX "Software\Microsoft\Windows\CurrentVersion\Uninstall\${UNINSTKEY}" "ClickToRun"
 ${If} $R0 != ""
-    MessageBox MB_YESNOCANCEL "Do you wish to let NSF2X remove the modifications it made to the registry" IDYES Yes2 IDNO No2
+    MessageBox MB_YESNOCANCEL "Do you wish to let NSF2X remove the modifications it made to the registry to support $\"Click To Run$\" ?" IDYES Yes2 IDNO No2
     Quit
     Yes2:
     

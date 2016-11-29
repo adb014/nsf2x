@@ -75,7 +75,7 @@ def main () :
     RT_BITMAP = 2
     RT_MANIFEST = 24
 
-    version = "1.2.9"
+    version = "1.2.10"
     author = "dbateman@free.fr"
     description="NSF2X - Converts Lotus NSF files to EML, MBOX or PST files..."
     
