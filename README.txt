@@ -55,6 +55,33 @@ Details
    install for all users. A single user install, doesn't need elevated 
    privileges.
    
+   Please note that if you have Outlook 2013 or 2016 installed in "Click to Run"
+   mode (aka "Office 365"), then NSF2X can not convert to PST files. You have 
+   several choices in this case
+   
+   A/ Upgrade your installation of Office to the "Open license full download" 
+   version. In this case the installation of Outlook will not be in "Click To
+   Run" mode
+   
+   B/ Allow the NSF2X installer to patch the registry. In this case NSF2X must
+   be installed with administrator privileges. This will allow NSF2X to run
+   correctly, however if you have multiple versions of Outlook installed (For
+   example Outlook 2007 and Outlook 2016) then the non "Click To Run" version 
+   (in this case Outlook 2007) might fail in unexpected ways. 
+   
+   In this case after having used NSF2X to convert your archives, you should 
+   uninstall it, letting the NSF2X uninstaller remove the modifications to the
+   registry. See
+   
+   https://blogs.msdn.microsoft.com/stephen_griffin/2014/04/21/outlook-2013-click-to-run-and-com-interfaces/
+   
+   for more information.
+   
+   C/ Continue the installation of NSF2x knowing that the conversion to PST 
+   files will not be possible
+   
+   D/ Don't use NSF2X
+   
    1. Make a copy of the *.nsf files you want to convert to a temporary location
   ------------------------------------------------------------------------------
    I make no guarantee that this program won't destroy your Lotus NSF archives,

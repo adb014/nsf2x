@@ -777,7 +777,7 @@ class Gui(tkinter.Frame):
                     self.log(ErrorLevel.ERROR, "%s" % traceback.format_exc())                    
                     subject = doc.GetFirstItem("Subject")
                     if subject :
-                        self.log (errlvl, "#### Subject : %s" % subject.Text)
+                        self.log (ErrorLevl.ERROR, "#### Subject : %s" % subject.Text)
         
                 finally:                  
                     c+=1

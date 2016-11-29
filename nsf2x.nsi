@@ -10,6 +10,12 @@
 !define DEFAULTNORMALDESTINATON "$ProgramFiles\${NAME}-${VERSION}"
 !define DEFAULTPORTABLEDESTINATON "$LocalAppdata\Programs\${NAME}-${VERSION}"
 
+!define CLSID_IConverterSession "{4E3A7680-B77A-11D0-9DA5-00C04FD65685}"
+!define CLSID_IMimeMessage "{9EADBD1A-447B-4240-A9DD-73FE7C53A981}"
+
+!define Office15ClickToRun "SOFTWARE\Microsoft\Office\15.0\ClickToRun\REGISTRY\MACHINE\Software\Classes"
+!define Office16ClickToRun "SOFTWARE\Microsoft\Office\16.0\ClickToRun\REGISTRY\MACHINE\Software\Classes"
+
 Name "${NAME}"
 Outfile "${NAME}-${VERSION}-setup.exe"
 RequestExecutionlevel highest
@@ -25,11 +31,13 @@ Var InstallAllUsers
 Var InstallAllUsersCtrl
 Var InstallShortcuts
 Var InstallShortcutsCtrl
+Var ClickToRun
 
 !include LogicLib.nsh
 !include FileFunc.nsh
 !include MUI2.nsh
 !include nsDialogs.nsh
+!include registry.nsh
 
 !insertmacro MUI_PAGE_WELCOME
 !define MUI_LICENSEPAGE_TEXT_BOTTOM "The source code for NSF2X is freely redistributable under the terms of the GNU General Public License (GPL) as published by the Free Software Foundation."
@@ -110,6 +118,134 @@ ${EndIf}
 Call SetModeDestinationFromInstdir
 FunctionEnd
 
+Function CheckClickToRun
+StrCpy $ClickToRun ""
+
+ReadRegStr $R0 HKLM "${Office16ClickToRun}\CLSID" "${CLSID_IConverterSession}"
+${If} $R0 != ""
+    ; Have Click To Run Outlook 2016
+    StrCpy $ClickToRun "1"
+    Goto FoundClickToRun
+${EndIf}
+
+ReadRegStr $R0 HKLM "${Office16ClickToRun}\Wow6432Node\CLSID" "${CLSID_IConverterSession}"
+${If} $R0 != ""
+    ; Have Click To Run Outlook 2016 32bit on 64bit
+    StrCpy $ClickToRun "2"
+    Goto FoundClickToRun
+${EndIf}
+
+ReadRegStr $R0 HKLM "${Office15ClickToRun}\CLSID" "${CLSID_IConverterSession}"
+${If} $R0 != ""
+    ; Have Click To Run Outlook 2013
+    StrCpy $ClickToRun "3"
+    Goto FoundClickToRun
+${EndIf}
+
+ReadRegStr $R0 HKLM "${Office15ClickToRun}\Wow6432Node\CLSID" "${CLSID_IConverterSession}"
+${If} $R0 != ""
+    ; Have Click To Run Outlook 2013 32bit on 64bit
+    StrCpy $ClickToRun "4"
+    Goto FoundClickToRun
+${EndIf}
+
+FoundClickToRun:
+ReadRegStr $R0 HKLM "Software\Classes\CLSID" "${CLSID_IConverterSession}"
+${If} $R0 != ""
+    ${If} $ClickToRun == "1"
+    ${OrIf} $ClickToRun == "3"
+        ; Registry is already patched, so don't need to do anything
+        StrCpy $ClickToRun ""
+    ${EndIf}
+${EndIf}
+
+ReadRegStr $R0 HKLM "Software\Classes\Wow6432Node\CLSID" "${CLSID_IConverterSession}"
+${If} $R0 != ""
+    ${If} $ClickToRun == "2"
+    ${OrIf} $ClickToRun == "4"
+        ; Registry is already patched, so don't need to do anything
+        StrCpy $ClickToRun ""
+    ${EndIf}
+${EndIf}
+
+${If} $ClickToRun != ""
+    MessageBox MB_YESNOCANCEL|MB_TOPMOST|MB_ICONEXCLAMATION \
+    "You appear to have a $\"Click To Run$\" version of Outlook installed. This will interfere with \
+    the conversion to Outlook PST files. You have three choices$\r$\n\
+    $\r$\n\
+    1. Allow NSF2X to patch the registry. In this case the NSF2X installer must run with administrator \
+    privileges. This fix will also cause issues if you are running multiple versions of Outlook. \
+    After patching, your $\"Click To Run$\" Outlook client will work correctly, but older versions \
+    of Outlook might fail in unexplained manners. See$\r$\n\
+    $\r$\n\
+    https://blogs.msdn.microsoft.com/stephen_griffin/2014/04/21/outlook-2013-click-to-run-and-com-interfaces/$\r$\n\
+    $\r$\n\
+    for more information$\r$\n\
+    2. Continue the installation knowing that the conversion to PST will not be possible$\r$\n\
+    3. Cancel the installation of NSF2X$\r$\n\
+    $\r$\n\
+    Do you wish to let NSF2X patch the registry ?" IDYES Yes IDNO No
+    ; Only get here if the cancel button was pressed
+    Quit
+    
+    Yes:
+    ${If} $ClickToRun == "1"
+        ; ClickToRun Outlook 2016        
+        ${registry::CopyKey} "HKLM\${Office16ClickToRun}\CLSID\${CLSID_IConverterSession}" "HKLM\Software\Classes\CLSID\${CLSID_IConverterSession}" $R0
+        ${If} $R0 != 0
+            MessageBox MB_OK|MB_ICONEXCLAMATION "Failed to Copy $\"CLSID_IConverterSession$\" registry value. Aborting"
+            Quit
+        ${EndIf}
+        ${registry::CopyKey} "HKLM\${Office16ClickToRun}\CLSID\${CLSID_IMimeMessage}" "HKLM\Software\Classes\CLSID\${CLSID_IMimeMessage}" $R0
+        ${If} $R0 != 0
+            MessageBox MB_OK|MB_ICONEXCLAMATION "Failed to Copy $\"CLSID_IMimeMessage$\" registry value. Aborting"
+            Quit
+        ${EndIf}
+    ${ElseIf} $ClickToRun == "2"
+        ; ClickToRun Outlook 2016 32bit on 64 bit
+        ${registry::CopyKey} "HKLM\${Office16ClickToRun}\Wow6432Node\CLSID\${CLSID_IConverterSession}" "HKLM\Software\Classes\Wow6432Node\CLSID\${CLSID_IConverterSession}" $R0
+        ${If} $R0 != 0
+            MessageBox MB_OK|MB_ICONEXCLAMATION "Failed to Copy $\"CLSID_IConverterSession$\" registry value. Aborting"
+            Quit
+        ${EndIf}
+        ${registry::CopyKey} "HKLM\${Office16ClickToRun}\Wow6432Node\CLSID\${CLSID_IMimeMessage}" "HKLM\Software\Classes\Wow6432Node\CLSID\${CLSID_IMimeMessage}" $R0
+        ${If} $R0 != 0
+            MessageBox MB_OK|MB_ICONEXCLAMATION "Failed to Copy $\"CLSID_IMimeMessage$\" registry value. Aborting"
+            Quit
+        ${EndIf}
+    ${ElseIf} $ClickToRun == "3"
+        ; ClickToRun Outlook 2013
+        ${registry::CopyKey} "HKLM\${Office15ClickToRun}\CLSID\${CLSID_IConverterSession}" "HKLM\Software\Classes\CLSID\${CLSID_IConverterSession}" $R0
+        ${If} $R0 != 0
+            MessageBox MB_OK|MB_ICONEXCLAMATION "Failed to Copy $\"CLSID_IConverterSession$\" registry value. Aborting"
+            Quit
+        ${EndIf}
+        ${registry::CopyKey} "HKLM\${Office15ClickToRun}\CLSID\${CLSID_IMimeMessage}" "HKLM\Software\Classes\CLSID\${CLSID_IMimeMessage}" $R0
+        ${If} $R0 != 0
+            MessageBox MB_OK|MB_ICONEXCLAMATION "Failed to Copy $\"CLSID_IMimeMessage$\" registry value. Aborting"
+            Quit
+        ${EndIf}
+    ${ElseIf} $ClickToRun == "4"
+        ; ClickToRun Outlook 2013 32bit on 64 bit
+        ${registry::CopyKey} "HKLM\${Office15ClickToRun}\Wow6432Node\CLSID\${CLSID_IConverterSession}" "HKLM\Software\Classes\Wow6432Node\CLSID\${CLSID_IConverterSession}" $R0
+        ${If} $R0 != 0
+            MessageBox MB_OK|MB_ICONEXCLAMATION "Failed to Copy $\"CLSID_IConverterSession$\" registry value. Aborting"
+            Quit
+        ${EndIf}
+        ${registry::CopyKey} "HKLM\${Office15ClickToRun}\Wow6432Node\CLSID\${CLSID_IMimeMessage}" "HKLM\Software\Classes\Wow6432Node\CLSID\${CLSID_IMimeMessage}" $R0
+        ${If} $R0 != 0
+            MessageBox MB_OK|MB_ICONEXCLAMATION "Failed to Copy $\"CLSID_IMimeMessage$\" registry value. Aborting"
+            Quit
+        ${EndIf}
+    ${EndIf}
+    Goto Finished
+    No:
+    ; Do nothing. PST conversion won't work 
+    StrCpy $ClickToRun ""
+    Finished:
+${EndIf}
+FunctionEnd
+
 Function RequireAdmin
 UserInfo::GetAccountType
 Pop $8
@@ -186,15 +322,18 @@ ${If} $R0 != ""
         ExecWait "$R0 /S"
     ${EndIf}
 ${EndIf}
+
+Call CheckClickToRun
 FunctionEnd
 
-Section
+Section "Install"
 SetOutPath "$InstDir"
 File /r dist\*
 
 WriteRegStr SHCTX "Software\Microsoft\Windows\CurrentVersion\Uninstall\${UNINSTKEY}" "DisplayName" "${NAME}"
 WriteRegStr SHCTX "Software\Microsoft\Windows\CurrentVersion\Uninstall\${UNINSTKEY}" "DisplayVersion" "${VERSION}"
 WriteRegStr SHCTX "Software\Microsoft\Windows\CurrentVersion\Uninstall\${UNINSTKEY}" "Publisher" "${PUBLISHER}"
+WriteRegStr SHCTX "Software\Microsoft\Windows\CurrentVersion\Uninstall\${UNINSTKEY}" "ClickToRun" $ClickToRun
 ${If} $InstallAllUsers  == ${BST_CHECKED}
     WriteRegStr SHCTX "Software\Microsoft\Windows\CurrentVersion\Uninstall\${UNINSTKEY}" "UninstallString" '"$InstDir\uninstall.exe" /ALL'
 ${Else}
@@ -225,7 +364,7 @@ ${If} $InstallShortCuts == ${BST_CHECKED}
 ${Endif}
 SectionEnd
 
-Section un.onInit
+Function un.onInit
 ${GetParameters} $9
 
 ClearErrors
@@ -233,28 +372,47 @@ ${GetOptions} $9 "/?" $8
 ${IfNot} ${Errors}
     MessageBox MB_ICONINFORMATION|MB_SETFOREGROUND "\
       /ALL : remove application for all users$\n\
-      /LOCAL : remove application for the current user$\n\
+      /USER : remove application for the current user$\n\
       /S : Silent$\n"
     Quit
 ${EndIf}
 
+ReadRegStr $R0 HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${UNINSTKEY}" "UninstallString"
+${If} $R0 != ""
+    SetShellVarContext all
+${Else}
+    SetShellVarContext current
+${EndIf}
+    
 ClearErrors
 ${GetOptions} $9 "/ALL" $8
 ${IfNot} ${Errors}
     SetShellVarContext all
-${Else}
-    SetShellVarContext current
 ${EndIf}
 
 ${GetOptions} $9 "/USER" $8
 ${IfNot} ${Errors}
     SetShellVarContext current
-${Else}
-    SetShellVarContext all
 ${EndIf}
-SectionEnd
+FunctionEnd
 
-Section Uninstall
+Section "Uninstall"
+ReadRegStr $R0 SHCTX "Software\Microsoft\Windows\CurrentVersion\Uninstall\${UNINSTKEY}" "ClickToRun"
+${If} $R0 != ""
+    MessageBox MB_YESNOCANCEL "Do you wish to let NSF2X remove the modifications it made to the registry" IDYES Yes2 IDNO No2
+    Quit
+    Yes2:
+    
+    ${If} $R0 == "1"
+    ${OrIf} $R0 == "3"
+        DeleteRegKey HKLM "Software\Classes\CLSID\${CLSID_IConverterSession}"
+        DeleteRegKey HKLM "Software\Classes\CLSID\${CLSID_IMimeMessage}"
+    ${Else}
+        DeleteRegKey HKLM "Software\Classes\Wow6432Node\CLSID\${CLSID_IConverterSession}"
+        DeleteRegKey HKLM "Software\Classes\Wow6432Node\CLSID\${CLSID_IMimeMessage}"    
+    ${EndIf}
+    No2:
+${EndIf}
 DeleteRegKey SHCTX "Software\Microsoft\Windows\CurrentVersion\Uninstall\${UNINSTKEY}"
 
 RMDir /r "$SMPROGRAMS\${NAME}-${VERSION}"
