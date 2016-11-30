@@ -13,8 +13,10 @@
 !define CLSID_IConverterSession "{4E3A7680-B77A-11D0-9DA5-00C04FD65685}"
 !define CLSID_IMimeMessage "{9EADBD1A-447B-4240-A9DD-73FE7C53A981}"
 
-!define Office15ClickToRun "SOFTWARE\Microsoft\Office\15.0\ClickToRun\REGISTRY\MACHINE\Software\Classes"
-!define Office16ClickToRun "SOFTWARE\Microsoft\Office\16.0\ClickToRun\REGISTRY\MACHINE\Software\Classes"
+!define Office15ClickToRun "Software\Microsoft\Office\15.0\ClickToRun\Registry\MACHINE\Software\Classes"
+!define Office16ClickToRun "Software\Microsoft\Office\16.0\ClickToRun\Registry\MACHINE\Software\Classes"
+
+!define TestReg "Software\Classes"
 
 Name "${NAME}"
 Outfile "${NAME}-${VERSION}-setup.exe"
@@ -121,29 +123,39 @@ FunctionEnd
 Function CheckClickToRun
 StrCpy $ClickToRun ""
 
-ReadRegStr $R0 HKLM "${Office16ClickToRun}\CLSID" "${CLSID_IConverterSession}"
+ReadRegStr $R0 HKLM "${TestReg}\CLSID\${CLSID_IConverterSession}" ""
 ${If} $R0 != ""
+    MessageBox MB_OK "Have CLSID_IConverterSession - $R0"
+${EndIf}
+
+ReadRegStr $R1 HKLM "${TestReg}\Wow6432Node\CLSID\${CLSID_IConverterSession}" ""
+${If} $R1 != ""
+    MessageBox MB_OK "Have Wow6432Node CLSID_IConverterSession - $R0"
+${EndIf}
+
+ReadRegStr $R1 HKLM "${Office16ClickToRun}\CLSID\${CLSID_IConverterSession}" ""
+${If} $R1 != ""
     ; Have Click To Run Outlook 2016
     StrCpy $ClickToRun "1"
     Goto FoundClickToRun
 ${EndIf}
 
-ReadRegStr $R0 HKLM "${Office16ClickToRun}\Wow6432Node\CLSID" "${CLSID_IConverterSession}"
-${If} $R0 != ""
+ReadRegStr $R2 HKLM "${Office16ClickToRun}\Wow6432Node\CLSID\${CLSID_IConverterSession}" ""
+${If} $R2 != ""
     ; Have Click To Run Outlook 2016 32bit on 64bit
     StrCpy $ClickToRun "2"
     Goto FoundClickToRun
 ${EndIf}
 
-ReadRegStr $R0 HKLM "${Office15ClickToRun}\CLSID" "${CLSID_IConverterSession}"
-${If} $R0 != ""
+ReadRegStr $R3 HKLM "${Office15ClickToRun}\CLSID\${CLSID_IConverterSession}" ""
+${If} $R3 != ""
     ; Have Click To Run Outlook 2013
     StrCpy $ClickToRun "3"
     Goto FoundClickToRun
 ${EndIf}
 
-ReadRegStr $R0 HKLM "${Office15ClickToRun}\Wow6432Node\CLSID" "${CLSID_IConverterSession}"
-${If} $R0 != ""
+ReadRegStr $R4 HKLM "${Office15ClickToRun}\Wow6432Node\CLSID\${CLSID_IConverterSession}" ""
+${If} $R4 != ""
     ; Have Click To Run Outlook 2013 32bit on 64bit
     StrCpy $ClickToRun "4"
     Goto FoundClickToRun
