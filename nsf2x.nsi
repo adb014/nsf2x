@@ -16,8 +16,6 @@
 !define Office15ClickToRun "Software\Microsoft\Office\15.0\ClickToRun\Registry\MACHINE\Software\Classes"
 !define Office16ClickToRun "Software\Microsoft\Office\16.0\ClickToRun\Registry\MACHINE\Software\Classes"
 
-!define TestReg "Software\Classes"
-
 Name "${NAME}"
 Outfile "${NAME}-${VERSION}-setup.exe"
 RequestExecutionlevel highest
@@ -122,16 +120,6 @@ FunctionEnd
 
 Function CheckClickToRun
 StrCpy $ClickToRun ""
-
-ReadRegStr $R0 HKLM "${TestReg}\CLSID\${CLSID_IConverterSession}" ""
-${If} $R0 != ""
-    MessageBox MB_OK "Have CLSID_IConverterSession - $R0"
-${EndIf}
-
-ReadRegStr $R1 HKLM "${TestReg}\Wow6432Node\CLSID\${CLSID_IConverterSession}" ""
-${If} $R1 != ""
-    MessageBox MB_OK "Have Wow6432Node CLSID_IConverterSession - $R0"
-${EndIf}
 
 ReadRegStr $R1 HKLM "${Office16ClickToRun}\CLSID\${CLSID_IConverterSession}" ""
 ${If} $R1 != ""
