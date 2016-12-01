@@ -159,7 +159,7 @@ ${If} $R0 != ""
     ${EndIf}
 ${EndIf}
 
-ReadRegStr $R0 HKLM "Software\Classes\Wow6432Node\CLSID"\${CLSID_IConverterSession}" ""
+ReadRegStr $R0 HKLM "Software\Classes\Wow6432Node\CLSID\${CLSID_IConverterSession}" ""
 ${If} $R0 != ""
     ${If} $ClickToRun == "2"
     ${OrIf} $ClickToRun == "4"
