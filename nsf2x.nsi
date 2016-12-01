@@ -150,7 +150,7 @@ ${If} $R4 != ""
 ${EndIf}
 
 FoundClickToRun:
-ReadRegStr $R0 HKLM "Software\Classes\CLSID" "${CLSID_IConverterSession}"
+ReadRegStr $R0 HKLM "Software\Classes\CLSID\${CLSID_IConverterSession}" ""
 ${If} $R0 != ""
     ${If} $ClickToRun == "1"
     ${OrIf} $ClickToRun == "3"
@@ -159,7 +159,7 @@ ${If} $R0 != ""
     ${EndIf}
 ${EndIf}
 
-ReadRegStr $R0 HKLM "Software\Classes\Wow6432Node\CLSID" "${CLSID_IConverterSession}"
+ReadRegStr $R0 HKLM "Software\Classes\Wow6432Node\CLSID"\${CLSID_IConverterSession}" ""
 ${If} $R0 != ""
     ${If} $ClickToRun == "2"
     ${OrIf} $ClickToRun == "4"
@@ -355,7 +355,7 @@ CreateShortCut "$SMPROGRAMS\${NAME}-${VERSION}\README.lnk" "$InstDir\README.txt"
 ${If} $InstallAllUsers  == ${BST_CHECKED}
     CreateShortCut "$SMPROGRAMS\${NAME}-${VERSION}\uninstall.lnk" "$InstDir\uninstall.exe" "/ALL" "" 0
 ${Else}
-    CreateShortCut "$SMPROGRAMS\${NAME}-${VERSION}\uninstall.lnk" "$InstDir\uninstall.exe" "" "" 0
+    CreateShortCut "$SMPROGRAMS\${NAME}-${VERSION}\uninstall.lnk" "$InstDir\uninstall.exe" "/USER" "" 0
 ${EndIf}
 
 ${If} $InstallShortCuts == ${BST_CHECKED}
