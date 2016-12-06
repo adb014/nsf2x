@@ -13,8 +13,13 @@
 !define CLSID_IConverterSession "{4E3A7680-B77A-11D0-9DA5-00C04FD65685}"
 !define CLSID_IMimeMessage "{9EADBD1A-447B-4240-A9DD-73FE7C53A981}"
 
-!define Office15ClickToRun "Software\Microsoft\Office\15.0\ClickToRun\Registry\MACHINE\Software\Classes"
-!define Office16ClickToRun "Software\Microsoft\Office\16.0\ClickToRun\Registry\MACHINE\Software\Classes"
+# Alternative locations of different versions of ClickToRun Office
+# If new values are added here, the logic of the ForEach loop 
+# below needs to be changed (NSIS doesn't have arrays or lists)
+!define Office15ClickToRun1 "Software\Microsoft\Office\15.0\ClickToRun\Registry\MACHINE\Software\Classes"
+!define Office15ClickToRun2 "Software\Office\15.0\ClickToRun\Registry\MACHINE\Software\Classes"
+!define Office16ClickToRun1 "Software\Microsoft\Office\16.0\ClickToRun\Registry\MACHINE\Software\Classes"
+!define Office16ClickToRun2 "Software\Office\16.0\ClickToRun\Registry\MACHINE\Software\Classes"
 
 Name "${NAME}"
 Outfile "${NAME}-${VERSION}-setup.exe"
@@ -32,6 +37,9 @@ Var InstallAllUsersCtrl
 Var InstallShortcuts
 Var InstallShortcutsCtrl
 Var ClickToRun
+Var OfficeClickToRun
+Var ClickToRunDestination
+Var i
 
 !include LogicLib.nsh
 !include FileFunc.nsh
@@ -67,7 +75,6 @@ ${GetOptions} $9 "/?" $8
 ${IfNot} ${Errors}
     MessageBox MB_ICONINFORMATION|MB_SETFOREGROUND "\
       /ALL : Extract application for all users$\n\
-      /USER : Extract application for current user$\n\
       /SHORTCUT : Install desktop shortcut$\n\
       /S : Silent install$\n\
       /D=%directory% : Specify destination directory$\n"
@@ -89,20 +96,6 @@ ${Else}
     StrCpy $InstallAllUsers ${BST_UNCHECKED}
 ${EndIf}
 
-${GetOptions} $9 "/USER" $8
-${IfNot} ${Errors}
-    SetShellVarContext current
-    StrCpy $0 $LocalDestDir
-    StrCpy $InstallAllUsers ${BST_UNCHECKED}
-${Else}
-    StrCpy $0 $NormalDestDir
-    ${If} ${Silent}
-        Call RequireAdmin
-    ${EndIf}
-    SetShellVarContext all
-    StrCpy $InstallAllUsers ${BST_CHECKED}
-${EndIf}
-
 ${GetOptions} $9 "/SHORTCUT" $8
 ${IfNot} ${Errors}
     StrCpy $InstallShortCuts ${BST_CHECKED}
@@ -120,52 +113,44 @@ FunctionEnd
 
 Function CheckClickToRun
 StrCpy $ClickToRun ""
+StrCpy $ClickToRunDestination ""
 
-ReadRegStr $R1 HKLM "${Office16ClickToRun}\CLSID\${CLSID_IConverterSession}" ""
-${If} $R1 != ""
-    ; Have Click To Run Outlook 2016
-    StrCpy $ClickToRun "1"
-    Goto FoundClickToRun
-${EndIf}
+# No arrays or lists in NSIS, so use a bit of messy logic to choose
+# potential registry locations of ClickToRun installs
 
-ReadRegStr $R2 HKLM "${Office16ClickToRun}\Wow6432Node\CLSID\${CLSID_IConverterSession}" ""
-${If} $R2 != ""
-    ; Have Click To Run Outlook 2016 32bit on 64bit
-    StrCpy $ClickToRun "2"
-    Goto FoundClickToRun
-${EndIf}
-
-ReadRegStr $R3 HKLM "${Office15ClickToRun}\CLSID\${CLSID_IConverterSession}" ""
-${If} $R3 != ""
-    ; Have Click To Run Outlook 2013
-    StrCpy $ClickToRun "3"
-    Goto FoundClickToRun
-${EndIf}
-
-ReadRegStr $R4 HKLM "${Office15ClickToRun}\Wow6432Node\CLSID\${CLSID_IConverterSession}" ""
-${If} $R4 != ""
-    ; Have Click To Run Outlook 2013 32bit on 64bit
-    StrCpy $ClickToRun "4"
-    Goto FoundClickToRun
-${EndIf}
-
-FoundClickToRun:
-ReadRegStr $R0 HKLM "Software\Classes\CLSID\${CLSID_IConverterSession}" ""
-${If} $R0 != ""
-    ${If} $ClickToRun == "1"
-    ${OrIf} $ClickToRun == "3"
-        ; Registry is already patched, so don't need to do anything
-        StrCpy $ClickToRun ""
+${ForEach} $i 1 4 + 1
+    ${If} $i == "1"
+        StrCpy $OfficeClickToRun ${Office16ClickToRun1}
+    ${ElseIf} $i == "2"
+        StrCpy $OfficeClickToRun ${Office16ClickToRun2}
+    ${ElseIf} $i == "3"
+        StrCpy $OfficeClickToRun ${Office15ClickToRun1}
+    ${ElseIf} $i == "4"
+        StrCpy $OfficeClickToRun ${Office15ClickToRun2}
     ${EndIf}
-${EndIf}
+    
+    ReadRegStr $R1 HKLM "$OfficeClickToRun\Wow6432Node\CLSID\${CLSID_IConverterSession}" ""
+    ${If} $R1 != ""
+        ; Have Click To Run with different bitness
+        StrCpy $ClickToRun "$OfficeClickToRun\Wow6432Node\CLSID"
+        StrCpy $ClickToRunDestination "Software\Classes\Wow6432Node\CLSID"
+        ${Break}
+    ${EndIf} 
 
-ReadRegStr $R0 HKLM "Software\Classes\Wow6432Node\CLSID\${CLSID_IConverterSession}" ""
-${If} $R0 != ""
-    ${If} $ClickToRun == "2"
-    ${OrIf} $ClickToRun == "4"
-        ; Registry is already patched, so don't need to do anything
-        StrCpy $ClickToRun ""
+    ReadRegStr $R2 HKLM "$OfficeClickToRun\CLSID\${CLSID_IConverterSession}" ""
+    ${If} $R2 != ""
+        ; Have Click To Run with same bitness
+        StrCpy $ClickToRun "$OfficeClickToRun\CLSID"
+        StrCpy $ClickToRunDestination "Software\Classes\CLSID"
+        ${Break}
     ${EndIf}
+${Next}
+
+# Check if registry is already patched.
+ReadRegStr $R0 HKLM "$ClickToRunDestination\${CLSID_IConverterSession}" ""
+${If} $R0 != ""
+    StrCpy $ClickToRun ""
+    StrCpy $ClickToRunDestination ""
 ${EndIf}
 
 ${If} $ClickToRun != ""
@@ -189,59 +174,22 @@ ${If} $ClickToRun != ""
     Quit
     
     Yes:
-    ${If} $ClickToRun == "1"
-        ; ClickToRun Outlook 2016        
-        ${registry::CopyKey} "HKLM\${Office16ClickToRun}\CLSID\${CLSID_IConverterSession}" "HKLM\Software\Classes\CLSID\${CLSID_IConverterSession}" $R0
-        ${If} $R0 != 0
-            MessageBox MB_OK|MB_ICONEXCLAMATION "Failed to Copy $\"CLSID_IConverterSession$\" registry value. Aborting"
-            Quit
-        ${EndIf}
-        ${registry::CopyKey} "HKLM\${Office16ClickToRun}\CLSID\${CLSID_IMimeMessage}" "HKLM\Software\Classes\CLSID\${CLSID_IMimeMessage}" $R0
-        ${If} $R0 != 0
-            MessageBox MB_OK|MB_ICONEXCLAMATION "Failed to Copy $\"CLSID_IMimeMessage$\" registry value. Aborting"
-            Quit
-        ${EndIf}
-    ${ElseIf} $ClickToRun == "2"
-        ; ClickToRun Outlook 2016 32bit on 64 bit
-        ${registry::CopyKey} "HKLM\${Office16ClickToRun}\Wow6432Node\CLSID\${CLSID_IConverterSession}" "HKLM\Software\Classes\Wow6432Node\CLSID\${CLSID_IConverterSession}" $R0
-        ${If} $R0 != 0
-            MessageBox MB_OK|MB_ICONEXCLAMATION "Failed to Copy $\"CLSID_IConverterSession$\" registry value. Aborting"
-            Quit
-        ${EndIf}
-        ${registry::CopyKey} "HKLM\${Office16ClickToRun}\Wow6432Node\CLSID\${CLSID_IMimeMessage}" "HKLM\Software\Classes\Wow6432Node\CLSID\${CLSID_IMimeMessage}" $R0
-        ${If} $R0 != 0
-            MessageBox MB_OK|MB_ICONEXCLAMATION "Failed to Copy $\"CLSID_IMimeMessage$\" registry value. Aborting"
-            Quit
-        ${EndIf}
-    ${ElseIf} $ClickToRun == "3"
-        ; ClickToRun Outlook 2013
-        ${registry::CopyKey} "HKLM\${Office15ClickToRun}\CLSID\${CLSID_IConverterSession}" "HKLM\Software\Classes\CLSID\${CLSID_IConverterSession}" $R0
-        ${If} $R0 != 0
-            MessageBox MB_OK|MB_ICONEXCLAMATION "Failed to Copy $\"CLSID_IConverterSession$\" registry value. Aborting"
-            Quit
-        ${EndIf}
-        ${registry::CopyKey} "HKLM\${Office15ClickToRun}\CLSID\${CLSID_IMimeMessage}" "HKLM\Software\Classes\CLSID\${CLSID_IMimeMessage}" $R0
-        ${If} $R0 != 0
-            MessageBox MB_OK|MB_ICONEXCLAMATION "Failed to Copy $\"CLSID_IMimeMessage$\" registry value. Aborting"
-            Quit
-        ${EndIf}
-    ${ElseIf} $ClickToRun == "4"
-        ; ClickToRun Outlook 2013 32bit on 64 bit
-        ${registry::CopyKey} "HKLM\${Office15ClickToRun}\Wow6432Node\CLSID\${CLSID_IConverterSession}" "HKLM\Software\Classes\Wow6432Node\CLSID\${CLSID_IConverterSession}" $R0
-        ${If} $R0 != 0
-            MessageBox MB_OK|MB_ICONEXCLAMATION "Failed to Copy $\"CLSID_IConverterSession$\" registry value. Aborting"
-            Quit
-        ${EndIf}
-        ${registry::CopyKey} "HKLM\${Office15ClickToRun}\Wow6432Node\CLSID\${CLSID_IMimeMessage}" "HKLM\Software\Classes\Wow6432Node\CLSID\${CLSID_IMimeMessage}" $R0
-        ${If} $R0 != 0
-            MessageBox MB_OK|MB_ICONEXCLAMATION "Failed to Copy $\"CLSID_IMimeMessage$\" registry value. Aborting"
-            Quit
-        ${EndIf}
+    ${registry::CopyKey} "HKLM\$ClickToRun\${CLSID_IConverterSession}" "HKLM\$ClickToRunDestination\${CLSID_IConverterSession}" $R0
+    ${If} $R0 != 0
+        MessageBox MB_OK|MB_ICONEXCLAMATION "Failed to Copy $\"CLSID_IConverterSession$\" registry value. Aborting"
+        Quit
     ${EndIf}
+    ${registry::CopyKey} "HKLM\$ClickToRun\${CLSID_IMimeMessage}" "HKLM\$ClickToRunDestination\${CLSID_IMimeMessage}" $R0
+    ${If} $R0 != 0
+        MessageBox MB_OK|MB_ICONEXCLAMATION "Failed to Copy $\"CLSID_IMimeMessage$\" registry value. Aborting"
+        Quit
+    ${EndIf}
+
     Goto Finished
     No:
     ; Do nothing. PST conversion won't work 
     StrCpy $ClickToRun ""
+    StrCpy $ClickToRunDestination ""
     Finished:
 ${EndIf}
 FunctionEnd
@@ -334,6 +282,7 @@ WriteRegStr SHCTX "Software\Microsoft\Windows\CurrentVersion\Uninstall\${UNINSTK
 WriteRegStr SHCTX "Software\Microsoft\Windows\CurrentVersion\Uninstall\${UNINSTKEY}" "DisplayVersion" "${VERSION}"
 WriteRegStr SHCTX "Software\Microsoft\Windows\CurrentVersion\Uninstall\${UNINSTKEY}" "Publisher" "${PUBLISHER}"
 WriteRegStr SHCTX "Software\Microsoft\Windows\CurrentVersion\Uninstall\${UNINSTKEY}" "ClickToRun" $ClickToRun
+WriteRegStr SHCTX "Software\Microsoft\Windows\CurrentVersion\Uninstall\${UNINSTKEY}" "ClickToRunDestination" $ClickToRunDestination
 ${If} $InstallAllUsers  == ${BST_CHECKED}
     WriteRegStr SHCTX "Software\Microsoft\Windows\CurrentVersion\Uninstall\${UNINSTKEY}" "UninstallString" '"$InstDir\uninstall.exe" /ALL'
 ${Else}
@@ -402,14 +351,10 @@ ${If} $R0 != ""
     MessageBox MB_YESNOCANCEL "Do you wish to let NSF2X remove the modifications it made to the registry to support $\"Click To Run$\" ?" IDYES Yes2 IDNO No2
     Quit
     Yes2:
-    
-    ${If} $R0 == "1"
-    ${OrIf} $R0 == "3"
-        DeleteRegKey HKLM "Software\Classes\CLSID\${CLSID_IConverterSession}"
-        DeleteRegKey HKLM "Software\Classes\CLSID\${CLSID_IMimeMessage}"
-    ${Else}
-        DeleteRegKey HKLM "Software\Classes\Wow6432Node\CLSID\${CLSID_IConverterSession}"
-        DeleteRegKey HKLM "Software\Classes\Wow6432Node\CLSID\${CLSID_IMimeMessage}"    
+    ReadRegStr $R1 SHCTX "Software\Microsoft\Windows\CurrentVersion\Uninstall\${UNINSTKEY}" "ClickToRunDestination"
+    ${If} $R1 != ""
+        DeleteRegKey HKLM "$R1\${CLSID_IConverterSession}"
+        DeleteRegKey HKLM "$R1\${CLSID_IMimeMessage}"   
     ${EndIf}
     No2:
 ${EndIf}
