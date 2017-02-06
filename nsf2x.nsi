@@ -16,10 +16,9 @@
 # Alternative locations of different versions of ClickToRun Office
 # If new values are added here, the logic of the ForEach loop 
 # below needs to be changed (NSIS doesn't have arrays or lists)
-!define Office15ClickToRun1 "Software\Microsoft\Office\15.0\ClickToRun\Registry\MACHINE\Software\Classes"
-!define Office15ClickToRun2 "Software\Office\15.0\ClickToRun\Registry\MACHINE\Software\Classes"
-!define Office16ClickToRun1 "Software\Microsoft\Office\16.0\ClickToRun\Registry\MACHINE\Software\Classes"
-!define Office16ClickToRun2 "Software\Office\16.0\ClickToRun\Registry\MACHINE\Software\Classes"
+!define OfficeXXClickToRun "Software\Microsoft\Office\ClickToRun\Registry\MACHINE\Software\Classes"
+!define Office15ClickToRun "Software\Microsoft\Office\15.0\ClickToRun\Registry\MACHINE\Software\Classes"
+!define Office16ClickToRun "Software\Microsoft\Office\16.0\ClickToRun\Registry\MACHINE\Software\Classes"
 
 Name "${NAME}"
 Outfile "${NAME}-${VERSION}-setup.exe"
@@ -118,15 +117,13 @@ StrCpy $ClickToRunDestination ""
 # No arrays or lists in NSIS, so use a bit of messy logic to choose
 # potential registry locations of ClickToRun installs
 
-${ForEach} $i 1 4 + 1
+${ForEach} $i 1 3 + 1
     ${If} $i == "1"
-        StrCpy $OfficeClickToRun ${Office16ClickToRun1}
+        StrCpy $OfficeClickToRun ${OfficeXXClickToRun}
     ${ElseIf} $i == "2"
-        StrCpy $OfficeClickToRun ${Office16ClickToRun2}
+        StrCpy $OfficeClickToRun ${Office16ClickToRun}
     ${ElseIf} $i == "3"
-        StrCpy $OfficeClickToRun ${Office15ClickToRun1}
-    ${ElseIf} $i == "4"
-        StrCpy $OfficeClickToRun ${Office15ClickToRun2}
+        StrCpy $OfficeClickToRun ${Office15ClickToRun}
     ${EndIf}
     
     ReadRegStr $R1 HKLM "$OfficeClickToRun\Wow6432Node\CLSID\${CLSID_IConverterSession}" ""

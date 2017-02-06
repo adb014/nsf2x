@@ -709,7 +709,7 @@ class Gui(tkinter.Frame):
                         else :
                             form = form.Text
                         empty = False
-                        if form in ("Appointment", "Notice", "Return Receipt", "Trace Report", "Delivery Report") :
+                        if form in ("Appointment", "Task", "Notice", "Return Receipt", "Trace Report", "Delivery Report") :
                             # These are clearly not messages, so ok to ignore them
                             errlvl = ErrorLevel.WARN
                         else :
@@ -784,7 +784,7 @@ class Gui(tkinter.Frame):
                     doc = fld.GetNextDocument(doc)
                     
                     if self.Format.get() == Format.MBOX :
-                        # MBOX is recognized by "\nFrom:" string. So add a trailing \n to each message to ensure this format
+                        # MBOX is recognized by "\nFrom " string. So add a trailing \n to each message to ensure this format
                         f.write(b"\n")
  
                     if (c % 20) == 0:
@@ -853,18 +853,18 @@ class Gui(tkinter.Frame):
                             bIsMime = _NotesEntries.NSFNoteHasMIMEPart(hNote)
                             stat = _NotesEntries.MIMEConvertCDParts(hNote, bCanonical, bIsMime, hCC)
                             
+                            if stat == 14941 :
+                                self.log(ErrorLevel.INFO, "MIMEConvertCDParts : Error converting note id 0x%s to MIME type text/html" % doc.NoteID)
+                                self.log(ErrorLevel.INFO, "MIMEConvertCDParts : Attempting to convert to text/plain")
+                                _NotesEntries.MMSetMessageContentEncoding(hCC, 1)
+                                stat = _NotesEntries.MIMEConvertCDParts(hNote, bCanonical, bIsMime, hCC)    
+                            
                             if stat == 0 :
                                 UPDATE_FORCE = ctypes.c_uint16(1);
                                 stat = _NotesEntries.NSFNoteUpdate(hNote, UPDATE_FORCE)
                                 if stat != 0 :
                                     self.log(ErrorLevel.ERROR, "Error calling NSFNoteUpdate (%d)" % stat)
-                            elif stat == 14941 :
-                                self.log(ErrorLevel.INFO, "MIMEConvertCDParts : Error converting note id 0x%s to MIME type text/html" % doc.NoteID)
-                                self.log(ErrorLevel.INFO, "MIMEConvertCDParts : Attempting to convert to text/plain")
-                                _NotesEntries.MMSetMessageContentEncoding(hCC, 1)
-                                stat = _NotesEntries.MIMEConvertCDParts(hNote, bCanonical, bIsMime, hCC)    
-                                
-                            if stat != 0 :
+                            else :
                                 self.log (ErrorLevel.ERROR, "Error calling MIMEConvertCDParts (%d)" % stat)
                                 
                             _NotesEntries.MMDestroyConvControls(hCC)
@@ -893,21 +893,34 @@ class Gui(tkinter.Frame):
                 headers = mime.Headers
 
             # Place the From and Date fields first to simplify conversion to MBOX format
-            content = mime.GetSomeHeaders(["From"], True)
-            f.write(content.encode('utf-8'))
-            if not content.endswith ("\n") :
-                f.write (b"\n")
-            content = mime.GetSomeHeaders(["Date"], True)
-            f.write(content.encode('utf-8'))
-            if not content.endswith ("\n") :
-                f.write (b"\n")
-            
+            if self.Format.get() == Format.MBOX :
+                content = mime.GetSomeHeaders(['From'], True)
+                if content.startswith('From: ') :
+                    _from = content[6:]
+                elif content.startswith('From:') :
+                    _from = content[5:]
+                else :
+                    _from = content
+                if _from.endswith('\n') :
+                    _from = _from[:-1]
+                content = mime.GetSomeHeaders(['Date'], True)
+                if content.startswith('Date: ') :
+                    _date = content[6:]
+                elif content.startswith('Date:') :
+                    _date = content[5:]
+                else :
+                    _date = content
+                if _date.endswith('\n') :
+                    _date = _date[:-1]                
+                mboxheader = 'From ' + _from + ' ' + _date+ '\n'
+                f.write(mboxheader.encode('utf-8'))
+
             # message envelope. If no MIME-Version header, add one
             if "MIME-Version:" not in headers :
                 f.write(b"MIME-Version: 1.0\n")
             
             # Write the rest of the headers, but exclude the MIME content-type to be placed last
-            content = mime.GetSomeHeaders(["From", "Date", "Content-type"], False)
+            content = mime.GetSomeHeaders(["Content-type"], False)
             # Some of the text might be in utf-8 so give it special treatment
             f.write(content.encode('utf-8'))
             if not content.endswith ("\n") :
@@ -944,11 +957,15 @@ class Gui(tkinter.Frame):
             f.flush ()       
                     
             if (contentType.startswith("multipart")) :
-                content = mime.preamble
-                if (content != "") :
-                    f.write (content.encode('utf-8'))
-                    if not content.endswith("\n") :
-                        f.write (b"\n")
+                try :
+                    # The preamble attribute might not exist
+                    content = mime.preamble
+                    if (content != "") :
+                        f.write (content.encode('utf-8'))
+                        if not content.endswith("\n") :
+                            f.write (b"\n")
+                except :
+                    pass
                                                 
                 child = mime.GetFirstChildEntity ()
                 while child != None :

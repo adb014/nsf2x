@@ -45,10 +45,6 @@ class mapiobject :
 
     def GetEntryID (self) :
         return self.GetProperty(win32com.mapi.mapitags.PR_ENTRYID)
-
-    def GetEntryIDString (self) :
-        entryID = self.GetEntryID()
-        return codecs.encode(entryID[1][0][1], 'hex')
         
     def Save (self, flags = 0) :
         self.item.SaveChanges(flags)
@@ -74,6 +70,12 @@ class mapimessage (mapiobject) :
     def SetSubject (self, subject) :
         return self.SetProperty (win32com.mapi.mapitags.PR_SUBJECT, subject)
         
+    def GetBody (self) :
+        return self.GetProperty (win32com.mapi.mapitags.PR_BODY)
+        
+    def SetBody (self, body) :
+        return self.SetProperty (win32com.mapi.mapitags.PR_BODY, body)
+        
     def GetMessageFlags (self) :
         return self.GetProperty (win32com.mapi.mapitags.PR_MESSAGE_FLAGS)
     
@@ -85,6 +87,30 @@ class mapimessage (mapiobject) :
         self.mapi.MimeToMapi(f, self.item, 0x20)
         self.SetMessageFlags(self.MSGFLAG_READ)
         f.close()
+        
+class mapiappointment (mapiobject) :
+    OUTLOOK_DATA2 = 0x00062002
+    OUTLOOK_APPOINTMENT_START = 0x820D
+    OUTLOOK_APPOINTMENT_END = 0x820E
+    OUTLOOK_APPOINTMENT_LOCATION = 0x8208
+
+    def __init__ (self, mapi, a = None) :
+        super(mapimessage, self).__init__(mapi, a)
+        
+    def appointment (self) :
+        return self.item
+        
+    def GetSubject (self) :
+        return self.GetProperty (win32com.mapi.mapitags.PR_SUBJECT)
+
+    def SetSubject (self, subject) :
+        return self.SetProperty (win32com.mapi.mapitags.PR_SUBJECT, subject)
+        
+    def GetBody (self) :
+        return self.GetProperty (win32com.mapi.mapitags.PR_BODY)
+        
+    def SetBody (self, body) :
+        return self.SetProperty (win32com.mapi.mapitags.PR_BODY, body)
 
 class mapifolder (mapiobject) :
     def __init__ (self, mapi, f, n = None) :
@@ -193,7 +219,24 @@ class mapifolder (mapiobject) :
         message = mapimessage(self.mapi)
         message.Open(eid)
         return message
-
+    
+    def GetFirstAppointment (self) :
+        self.GetContents ()
+        return self.GetNextAppointment ()
+        
+    def GetNextAppointment (self) :
+        if self.contents == None :
+            raise "mapifolder:GetNextAppointment : Call GetFirstAppointment before GetNextAppointment"
+            
+        rows = self.contents.QueryRows(1, 0)
+        if len(rows) != 1:
+            return None
+        row = rows[0] 
+        (eid_tag, eid), (flag_tag, flag) = row
+        appointment = mapiappointment(self.mapi)
+        appointment.Open(eid)
+        return appointment
+        
     def ImportEML (self, eml) :                  
         message = self.CreateMessage()
         message.ImportEML(eml)
@@ -307,6 +350,7 @@ class mapi (object) :
         # unpack the row and open the message store
         (eid_tag, eid), (name_tag, name), (def_store_tag, def_store) = row
         self.msgstore = self.session().OpenMsgStore(0, eid, None, win32com.mapi.mapi.MDB_NO_DIALOG | win32com.mapi.mapi.MAPI_BEST_ACCESS)
+        self.storename = storename
         
     def AddMessageStore (self, storename, storepath) :
         # Note that this method adds the store without opening it.
@@ -349,10 +393,29 @@ class mapi (object) :
         PR_PST_PATH = int(0x6700001E)
         serviceAdmin.ConfigureMsgService(serviceUID, 0, 0, ((win32com.mapi.mapi.PR_DISPLAY_NAME_A, storename), (PR_PST_PATH, storepath)))
     
-    def OpenRootFolder (self) :      
-        # Open the root folder of the MsgStore
+    def OpenRootFolder (self) :
+        # Open the root folder of the MsgStore 
         hr, props = self.msgstore.GetProps((win32com.mapi.mapitags.PR_IPM_SUBTREE_ENTRYID), 0)
         (tag, eid) = props[0]
         if win32com.mapi.mapitags.PROP_TYPE(tag) == win32com.mapi.mapitags.PT_ERROR :
-            raise TypeError('Error opening root folder of %s' % storename)
+            raise TypeError('Error opening root folder of %s' % self.storename)
         return mapifolder (self, self.msgstore.OpenEntry (eid, None, win32com.mapi.mapi.MAPI_MODIFY))
+    
+    def OpenInbox (self) :
+        cbEntryID, pEntryID = self.msgstore.GetReceiveFolder(None, 0, None)
+        return mapifolder (self.msgstore.OpenEntry(cbEntryID, pEntryID, win32com.mapi.mapi.MAPI_MODIFY))        
+        
+    def OpenSpecialFolder (self, FolderID) :
+        pInbox = self.OpenInbox()
+        hr, props = pInbox.Folder().GetProps((FolderID), 0)
+        (tag, eid) = props[0]
+        if win32com.mapi.mapitags.PROP_TYPE(tag) == win32com.mapi.mapitags.PT_ERROR :
+            raise TypeError('Error opening special folder of %s' % self.storename)
+        return mapifolder (self, self.msgstore.OpenEntry (eid, None, win32com.mapi.mapi.MAPI_MODIFY))
+        
+    def OpenCalendar (self) :
+        return self.OpenSpecialFolder (win32com.mapi.mapitags.PR_IPM_APPOINTMENT_ENTRYID)
+        
+
+
+        
