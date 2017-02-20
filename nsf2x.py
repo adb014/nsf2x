@@ -61,6 +61,9 @@ class SubdirectoryMBOX :
 class ErrorLevel :
     NORMAL, ERROR, WARN, INFO = list(range(4))
     
+class Exceptions :
+    EX_1, EX_10, EX_100, EX_INF = list(range(4))
+    
 class NotesEntries(object) :
     OPEN_RAW_RFC822_TEXT = ctypes.c_uint32(0x01000000)
     OPEN_RAW_MIME_PART = ctypes.c_uint32(0x02000000)
@@ -257,6 +260,8 @@ class Gui(tkinter.Frame):
         self.MBOXType.set(SubdirectoryMBOX.YES)
         self.ErrorLevel = tkinter.IntVar()
         self.ErrorLevel.set(ErrorLevel.ERROR)
+        self.Exceptions = tkinter.IntVar()
+        self.Exceptions.set(Exceptions.EX_100)
                 
         #Lotus Password
         tkinter.Label(self.master, text="Enter Lotus Notes password").grid(row=1, column=1, sticky=tkinter.W)
@@ -450,9 +455,26 @@ class Gui(tkinter.Frame):
         
         R10 = tkinter.Radiobutton(self.dialog, text="Information", variable=self.ErrorLevel, value=ErrorLevel.INFO)
         R10.grid(row=9, column=3, columnspan=2, sticky=tkinter.W)
+             
+        ttk.Separator(self.dialog, orient=tkinter.HORIZONTAL).grid(row=10, columnspan=5, sticky=tkinter.E+tkinter.W)
+
+        L4 = tkinter.Label (self.dialog, text="Number of exceptions before giving up :")
+        L4.grid (row=11, column=1, columnspan=4, sticky=tkinter.W)
+        
+        R11 = tkinter.Radiobutton(self.dialog, text="1", variable=self.Exceptions, value=Exceptions.EX_1)
+        R11.grid(row=12, column=1, sticky=tkinter.W)
+        
+        R12 = tkinter.Radiobutton(self.dialog, text="10", variable=self.Exceptions, value=Exceptions.EX_10)
+        R12.grid(row=12, column=2, sticky=tkinter.W)
+        
+        R13 = tkinter.Radiobutton(self.dialog, text="100", variable=self.Exceptions, value=Exceptions.EX_100)
+        R13.grid(row=12, column=3, sticky=tkinter.W)
+        
+        R14 = tkinter.Radiobutton(self.dialog, text="Infinite", variable=self.Exceptions, value=Exceptions.EX_INF)
+        R14.grid(row=12, column=4, sticky=tkinter.W)
         
         B1 = tkinter.Button(self.dialog, text="Close", command=self.closeOptions, relief=tkinter.GROOVE)
-        B1.grid(row=10,column=2, columnspan=2, sticky=tkinter.E+tkinter.W)
+        B1.grid(row=13,column=2, columnspan=2, sticky=tkinter.E+tkinter.W)
         
         self.dialog.focus_force ()
  
@@ -523,7 +545,17 @@ class Gui(tkinter.Frame):
         e = 0 #exception counter
         ac = 0 # all message count, though only an upper bounds as some documents not in folders
         tl = self.winfo_toplevel()
-
+        
+        # Setup the permitted number of exceptions
+        if self.Exceptions.get() == Exceptions.EX_1 :
+            ex = 1
+        elif self.Exceptions.get() == Exceptions.EX_10 :
+            ex = 10
+        elif self.Exceptions.get() == Exceptions.EX_10 :
+            ex = 100
+        else :
+            ex = -1
+            
         path = os.path.join(self.nsfPath,src)
         self.log(ErrorLevel.NORMAL, "Converting : %s " % path)        
 
@@ -574,7 +606,10 @@ class Gui(tkinter.Frame):
                     return False
                 continue
             doc = fld.GetFirstDocument()
-            while doc and e < 100 : #stop after 100 exceptions...
+            
+
+            
+            while doc and ex > 0 and e < ex : #stop after XXX exceptions...
                 if not self.running :
                     return False
                     
@@ -590,7 +625,7 @@ class Gui(tkinter.Frame):
                     tl.title("Lotus Notes Converter - Phase 1/2 Converting MIME (%.1f%%)" % float(10.*c/ac))
                     self.update()
 
-        if e == 100 :
+        if e == ex or (ex < 0 and e > 0) :
             self.log (ErrorLevel.ERROR, "Too many exceptions during MIME conversion. Stopping\n")
             return False
  
@@ -694,7 +729,7 @@ class Gui(tkinter.Frame):
                 
             doc = fld.GetFirstDocument()
             d=1
-            while doc and e < 100 : #stop after 100 exceptions...
+            while doc and ex > 0 and e < ex : #stop after XXX exceptions...
                 if not self.running :
                     return False
                     
@@ -795,7 +830,7 @@ class Gui(tkinter.Frame):
                 f.close ()
 
         # Alert user if there were too many exceptions
-        if e == 100 :
+        if e == ex or (ex < 0 and e > 0)  :
             self.log (ErrorLevel.ERROR, "Too many exceptions during mail importation. Stopping")
        
         if self.Format.get() == Format.MBOX and self.MBOXType.get() == SubdirectoryMBOX.NO :
@@ -935,6 +970,7 @@ class Gui(tkinter.Frame):
             # if it's a binary part, force it to b64
             if (encoding == 1730 or encoding == 1729) :  
                 # MIMEEntity.ENC_IDENTITY_BINARY and MIMEEntity.ENC_IDENTITY_8BIT
+                mime.DecodeContent()
                 mime.EncodeContent(1727)  # MIMEEntity.ENC_BASE64
                 headers = mime.Headers
 
@@ -950,9 +986,10 @@ class Gui(tkinter.Frame):
 
             f.write(b"\n")       
             content = mime.ContentAsText
-            f.write (content.encode('utf-8'))
-            if not content.endswith ("\n") :
-                f.write (b"\n")
+            if content != None :
+                f.write (content.encode('utf-8'))
+                if not content.endswith ("\n") :
+                    f.write (b"\n")
                     
             f.flush ()       
                     

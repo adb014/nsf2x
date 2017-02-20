@@ -28,7 +28,7 @@ from win32com.client import pythoncom
 from win32com.server import util
 import pywintypes
 
-class mapiobject :
+class mapiobject (object) :
     def __init__ (self, mapi, item = None) :
         self.mapi = mapi
         self.item = item
