@@ -27,6 +27,7 @@ import win32com.mapi.mapitags
 from win32com.client import pythoncom
 from win32com.server import util
 import pywintypes
+import ctypes 
 
 class mapiobject (object) :
     def __init__ (self, mapi, item = None) :
@@ -335,9 +336,12 @@ class mapi (object) :
             rows = self.messagestorestable.QueryRows(1, 0)
             #if this is the last row then stop
             if len(rows) != 1:
-                raise "mapi:OpenMessageStore : Error opening message store"
+                raise NameError("mapi:OpenMessageStore : Error opening message store")
             #if this store has the right name stop
-            if storename == None or ((win32com.mapi.mapitags.PR_DISPLAY_NAME_A,storename.encode('utf-8')) in rows[0]):
+            # Check the windows code page and compare with the right encoding 
+            codepage = 'cp' + str(ctypes.cdll.kernel32.GetACP())
+            
+            if storename == None or ((win32com.mapi.mapitags.PR_DISPLAY_NAME_A,storename.encode(codepage)) in rows[0]):
                 row = rows[0]
                 break
 

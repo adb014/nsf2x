@@ -218,6 +218,20 @@ Details
    
    Information : Display all messages, can be rather verbose
    
+   Number of exceptions before giving up
+   .....................................
+   This option concerns all conversion types. The possible options are 
+   
+   1 : A single exception will cause NSF2X to stop. This is only useful while 
+   debugging
+   
+   10 : Ten exceptions are allowed before NSF2X stops
+   
+   100 : One hundred exceptions are allowed beofre NSF2X stops
+   
+   Infinite : NSF2X will run until the end of the conversion regardless of the
+   number of exceptions.
+   
    9. Enter the source path of the temporary location with the "*.nsf" files
   --------------------------------------------------------------------------
    Clicking on the source directory entry will open a dialog to select a

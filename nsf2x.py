@@ -63,7 +63,17 @@ class ErrorLevel :
     
 class Exceptions :
     EX_1, EX_10, EX_100, EX_INF = list(range(4))
-    
+
+# Dumb function to convert UTF-16 to Lotus LMBCS strings to allow accents in 
+# file names
+# See https://fossies.org/dox/w32tex-src/ucnv__lmb_8c_source.html
+def ConvertUTF16ToLMBCS (str) :
+    lmbcs = bytearray(str.encode('utf-16'))
+    for i in range (1, len(lmbcs), 2) :
+        if lmbcs[i] == 0 :
+            lmbcs[i] = b'\xF6'
+    return bytes(lmbcs)
+  
 class NotesEntries(object) :
     OPEN_RAW_RFC822_TEXT = ctypes.c_uint32(0x01000000)
     OPEN_RAW_MIME_PART = ctypes.c_uint32(0x02000000)
@@ -150,7 +160,15 @@ class NotesEntries(object) :
     
     def NSFDbOpen (self, path) :
         self.isLoaded(True, False)
-        return self.nnotesdll.NSFDbOpen (ctypes.c_char_p(path.encode('utf-8')), ctypes.byref (self.hDb))
+        
+        # Conevsrion UNICODE to LMBCS to allow Lotus to open databases with
+        # accents in their names
+        maxpath = 1024
+        astr1 = path.encode('utf-8')
+        astr2 = ctypes.create_string_buffer(maxpath)
+        self.nnotesdll.OSTranslate(24, astr1, len(astr1), ctypes.byref(astr2), maxpath)
+        
+        return self.nnotesdll.NSFDbOpen (ctypes.c_char_p(astr2.value), ctypes.byref (self.hDb))
 
     def NSFDbClose (self) :
         self.isLoaded()
@@ -253,9 +271,9 @@ class Gui(tkinter.Frame):
         
         # Initialize the default values of the Radio buttons
         self.Format = tkinter.IntVar()
-        self.Format.set(Format.EML)
+        self.Format.set(Format.PST)
         self.Encrypt = tkinter.IntVar()
-        self.Encrypt.set(EncryptionType.DES)
+        self.Encrypt.set(EncryptionType.AES256)
         self.MBOXType = tkinter.IntVar()
         self.MBOXType.set(SubdirectoryMBOX.YES)
         self.ErrorLevel = tkinter.IntVar()
@@ -628,6 +646,9 @@ class Gui(tkinter.Frame):
             self.log (ErrorLevel.ERROR, "Too many exceptions during MIME conversion. Stopping\n")
             return False
  
+        if c <= 0 :
+            raise ValueError('ERROR : The database %s appears to be empty. Returning' % src)
+            
         f = None
         MAPIrootFolder = None
 
