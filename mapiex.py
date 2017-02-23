@@ -177,7 +177,7 @@ class mapifolder (mapiobject) :
 
     def GetNextSubFolder (self) :
         if self.Hierarchy == None :
-            raise "mapifolder:GetNextSubFolder : Call GetFirstSubFolder before GetNextSubFolder"
+            raise TypeError("mapifolder:GetNextSubFolder : Call GetFirstSubFolder before GetNextSubFolder")
         subfolder = None
         while True :
             rows = self.Hierarchy.QueryRows(1, 0)
@@ -210,7 +210,7 @@ class mapifolder (mapiobject) :
         
     def GetNextMessage (self) :
         if self.contents == None :
-            raise "mapifolder:GetNextMessage : Call GetFirstMessage before GetNextMessage"
+            raise TypeError("mapifolder:GetNextMessage : Call GetFirstMessage before GetNextMessage")
             
         rows = self.contents.QueryRows(1, 0)
         if len(rows) != 1:
@@ -227,7 +227,7 @@ class mapifolder (mapiobject) :
         
     def GetNextAppointment (self) :
         if self.contents == None :
-            raise "mapifolder:GetNextAppointment : Call GetFirstAppointment before GetNextAppointment"
+            raise TypeError("mapifolder:GetNextAppointment : Call GetFirstAppointment before GetNextAppointment")
             
         rows = self.contents.QueryRows(1, 0)
         if len(rows) != 1:
@@ -347,9 +347,9 @@ class mapi (object) :
 
         if row == None :
             if storename == None :
-                raise "mapi:OpenMessageStore : Can not find default messagestore"
+                raise NameError("mapi:OpenMessageStore : Can not find default messagestore")
             else :
-                raise "mapi:OpenMessageStore : Can not find messagestore : %s" % storename
+                raise NameError("mapi:OpenMessageStore : Can not find messagestore : %s" % storename)
 
         # unpack the row and open the message store
         (eid_tag, eid), (name_tag, name), (def_store_tag, def_store) = row

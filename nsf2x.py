@@ -63,16 +63,6 @@ class ErrorLevel :
     
 class Exceptions :
     EX_1, EX_10, EX_100, EX_INF = list(range(4))
-
-# Dumb function to convert UTF-16 to Lotus LMBCS strings to allow accents in 
-# file names
-# See https://fossies.org/dox/w32tex-src/ucnv__lmb_8c_source.html
-def ConvertUTF16ToLMBCS (str) :
-    lmbcs = bytearray(str.encode('utf-16'))
-    for i in range (1, len(lmbcs), 2) :
-        if lmbcs[i] == 0 :
-            lmbcs[i] = b'\xF6'
-    return bytes(lmbcs)
   
 class NotesEntries(object) :
     OPEN_RAW_RFC822_TEXT = ctypes.c_uint32(0x01000000)
@@ -161,7 +151,7 @@ class NotesEntries(object) :
     def NSFDbOpen (self, path) :
         self.isLoaded(True, False)
         
-        # Conevsrion UNICODE to LMBCS to allow Lotus to open databases with
+        # Conversion UNICODE to LMBCS to allow Lotus to open databases with
         # accents in their names
         maxpath = 1024
         astr1 = path.encode('utf-8')
