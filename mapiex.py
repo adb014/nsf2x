@@ -187,7 +187,7 @@ class mapifolder (mapiobject) :
             row = rows[0]
             (eid_tag, eid), (name_tag, name) = row
             subfolder = self.folder().OpenEntry(eid, None, win32com.mapi.mapi.MAPI_MODIFY)
-            if subfolder != None :
+            if subfolder != None :    
                 subfolder = mapifolder (self.mapi, subfolder, name)
                 break
         return subfolder
@@ -256,6 +256,14 @@ class mapi (object) :
         self.converter = None
         self._session = win32com.mapi.mapi.MAPILogonEx(0, profilename, None, win32com.mapi.mapi.MAPI_EXTENDED | win32com.mapi.mapi.MAPI_USE_DEFAULT)
         os.chdir(save_cwd)
+        
+        # Check the windows code page and compare with the right encoding
+        cp  = ctypes.cdll.kernel32.GetACP()
+        if cp > 1258 :
+            # Not a standard Python encoding, fall back to 'utf-8' and pray it works                
+            self.codepage = 'utf-8'
+        else :
+            self.codepage = 'cp' + str(cp)       
    
     def __delete__ (self) :
         win32com.mapi.mapi.MAPIUninitialize()
@@ -274,7 +282,7 @@ class mapi (object) :
             row = rows[0]
             (name_tag, name), (res_tag, res) = row
             if res == 39 :   # MAPI_SUBSYSTEM = 39
-                return name
+                return name.decode(self.codepage)
         return ""
         
     def GetProfileEmail (self) :
@@ -325,7 +333,8 @@ class mapi (object) :
             row = rows[0]
             # unpack the row and print name of the message store
             (eid_tag, eid), (name_tag, name), (def_store_tag, def_store) = row
-            Names.append (name)           
+              
+            Names.append (name.decode(self.codepage))           
         return Names
     
     def OpenMessageStore (self, storename = None) :
@@ -338,10 +347,7 @@ class mapi (object) :
             if len(rows) != 1:
                 raise NameError("mapi:OpenMessageStore : Error opening message store")
             #if this store has the right name stop
-            # Check the windows code page and compare with the right encoding 
-            codepage = 'cp' + str(ctypes.cdll.kernel32.GetACP())
-            
-            if storename == None or ((win32com.mapi.mapitags.PR_DISPLAY_NAME_A,storename.encode(codepage)) in rows[0]):
+            if storename == None or ((win32com.mapi.mapitags.PR_DISPLAY_NAME_A,storename.encode(self.codepage)) in rows[0]):
                 row = rows[0]
                 break
 
