@@ -28,7 +28,7 @@ Development
 
    Select the latest build and download and install the version adapted to
    your version of Python. Yes WinPython already has pywin32 installed, but
-   the version in the WinPython distributions in built without the MAPI
+   the version in the WinPython distributions is built without the MAPI
    interface that will be used.
 
    3. Install the py2exe extension to allow the creation of nsf2x.exe

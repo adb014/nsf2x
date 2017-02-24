@@ -556,13 +556,13 @@ class Gui(tkinter.Frame):
         
         # Setup the permitted number of exceptions
         if self.Exceptions.get() == Exceptions.EX_1 :
-            ex = 1
+            nex = 1
         elif self.Exceptions.get() == Exceptions.EX_10 :
-            ex = 10
+            nex = 10
         elif self.Exceptions.get() == Exceptions.EX_100 :
-            ex = 100
+            nex = 100
         else :
-            ex = -1
+            nex = -1
             
         path = os.path.join(self.nsfPath,src)
         self.log(ErrorLevel.NORMAL, "Converting : %s " % path)        
@@ -615,7 +615,7 @@ class Gui(tkinter.Frame):
                 continue
             doc = fld.GetFirstDocument()
             
-            while doc and (ex < 0 or e < ex) : #stop after XXX exceptions...
+            while doc and (nex < 0 or e < nex) : #stop after XXX exceptions...
                 if not self.running :
                     return False
                     
@@ -624,6 +624,7 @@ class Gui(tkinter.Frame):
                         e+=1
                         self.log(ErrorLevel.ERROR, "Can not convert message %d to MIME" % c)
                 except Exception as ex:
+                    e+=1
                     self.log(ErrorLevel.ERROR, "Exception converting message %d to MIME : %s" % (c, ex))
 
                 doc = fld.GetNextDocument(doc)
@@ -632,7 +633,7 @@ class Gui(tkinter.Frame):
                     tl.title("Lotus Notes Converter - Phase 1/2 Converting MIME (%.1f%%)" % float(10.*c/ac))
                     self.update()
 
-        if e == ex :
+        if e == nex :
             self.log (ErrorLevel.ERROR, "Too many exceptions during MIME conversion. Stopping\n")
             return False
  
@@ -739,7 +740,7 @@ class Gui(tkinter.Frame):
                 
             doc = fld.GetFirstDocument()
             d=1
-            while doc and (ex < 0 or e < ex) : #stop after XXX exceptions...
+            while doc and (nex < 0 or e < nex) : #stop after XXX exceptions...
                 if not self.running :
                     return False
                     
@@ -840,7 +841,7 @@ class Gui(tkinter.Frame):
                 f.close ()
 
         # Alert user if there were too many exceptions
-        if e == ex :
+        if e == nex :
             self.log (ErrorLevel.ERROR, "Too many exceptions during mail importation. Stopping")
        
         if self.Format.get() == Format.MBOX and self.MBOXType.get() == SubdirectoryMBOX.NO :
@@ -851,6 +852,12 @@ class Gui(tkinter.Frame):
         return True
  
     def ConvertToMIME (self, doc, _NotesEntries) :
+        
+        # Check if NoteID is empty before continuing and give more informative
+        # error message
+        if doc.NoteID == None or doc.NoteID == '' :
+            self.log(ErrorLevel.ERROR, "Notes message has empty NoteID")
+            return False 
 
         # I'd really like to use doc.UniversalID here to open the file with 
         # NSFNoteOpenByUNID. However, doc.UniversalID is a string and
