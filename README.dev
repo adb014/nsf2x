@@ -63,7 +63,7 @@ Development
    
    create_exe.py will attempt to copy these to the directory, but might fail. 
    If they are absent then you'll need to copy them to the dist directory. 
-   This is complicated by the fact the several versions of these DLLs might be 
+   This is complicated by the fact that several versions of these DLLs might be 
    present on your machine. You need the ones that your version of Python use.
    If the mfc*.dll and msvcr*.dll were present you can distribute the 
    created zip file directly, otherwise after copying the files, you'll
@@ -176,7 +176,8 @@ Development
    The "SameMessage" function tests a number of fields of the current Lotus
    document against the opened EML file to see that they are the same. I used
    the Sender and SentOn fields as accents in the Subject field caused some
-   issues.
+   issues. If the MessageID field is present it should give a unique identify
+   as well.
 
    Using Extended MAPI IConverter function
    .......................................
@@ -218,7 +219,7 @@ Development
    to be performed.
    
    The problem with the encryption is that it relies on the users Outlook
-   address book have the certificates for all the senders and recipients of 
+   address book to have the certificates for all the senders and recipients of 
    encrypted mails. These certificates can be in the form of a local contact
    or the "Global Address List" of the Exchange server. Otherwise NSF2X
    will cause Outlook to present the user is a dialog asking them how to
