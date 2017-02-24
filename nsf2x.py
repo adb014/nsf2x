@@ -1064,7 +1064,7 @@ class Gui(tkinter.Frame):
                                     pass
                                     
                             if not self.hCryptoProv :
-                                if enc == EncryptionType.AES128 or enc == EncryptionType.AES256 :
+                                if self.Encrypt.get() == EncryptionType.AES128 or self.Encrypt.get() == EncryptionType.AES256 :
                                     self.log(ErrorLevel.ERROR, "Windows cryptographic provider does not support AES encryption") 
                                     self.log(ErrorLevel.ERROR, "Falling back to 3DES 168bit encryption")
                                     self.Encrypt.set(EncryptionType.DES)
