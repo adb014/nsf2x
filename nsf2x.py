@@ -248,7 +248,9 @@ class NotesEntries(object) :
 class Gui(tkinter.Frame):
     """Basic Gui for NSF to EML, MBOX, PST export"""
     def __init__(self):
-        # Setup the Tk frame including the manor in will the row/columns are expanded 
+        # Setup the Tk frame including the manor in will the row/columns are 
+        # expanded. IE. Expand all columns equally, but only expand in height
+        # the message area
         tkinter.Frame.__init__(self)
         self.master.title("Lotus Notes Converter")
         self.master.grid_rowconfigure(4, weight = 1)
@@ -426,7 +428,8 @@ class Gui(tkinter.Frame):
         
         self.dialog = tkinter.Toplevel(master=self.winfo_toplevel())
         self.dialog.title ("NSF2X Options")
-        self.dialog.protocol ("WM_DELETE_WINDOW", self.closeOptions)  
+        self.dialog.protocol ("WM_DELETE_WINDOW", self.closeOptions)
+        self.dialog.resizable(0,0)
         
         L1 = tkinter.Label (self.dialog, text="Use different MBOXes for each sub-folder :")
         L1.grid(row=1, column=1, columnspan=4, sticky=tkinter.W)
