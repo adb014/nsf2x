@@ -248,8 +248,15 @@ class NotesEntries(object) :
 class Gui(tkinter.Frame):
     """Basic Gui for NSF to EML, MBOX, PST export"""
     def __init__(self):
+        # Setup the Tk frame including the manor in will the row/columns are expanded 
         tkinter.Frame.__init__(self)
         self.master.title("Lotus Notes Converter")
+        self.master.grid_rowconfigure(4, weight = 1)
+        self.master.grid_columnconfigure(1, weight = 1)
+        self.master.grid_columnconfigure(2, weight = 1)
+        self.master.grid_columnconfigure(3, weight = 1)
+        self.master.grid_columnconfigure(4, weight = 1)
+                
         self.nsfPath = "."
         self.destPath = os.path.join(os.path.expanduser('~'),'Documents')
         self.checked = False
@@ -304,7 +311,7 @@ class Gui(tkinter.Frame):
 
         #Message Area
         frame = tkinter.Frame(self.master)
-        frame.grid(row=4, column=1, columnspan=4)
+        frame.grid(row=4, column=1, columnspan=4, sticky=tkinter.E+tkinter.W+tkinter.N+tkinter.S)
         self.messageWidget = tkinter.Text(frame, width=80, height=20, state = tkinter.DISABLED, wrap=tkinter.NONE)
         scrollY = tkinter.Scrollbar(frame, orient = tkinter.VERTICAL, command=self.messageWidget.yview)
         self.messageWidget['yscrollcommand'] = scrollY.set
