@@ -248,7 +248,7 @@ class NotesEntries(object) :
 class Gui(tkinter.Frame):
     """Basic Gui for NSF to EML, MBOX, PST export"""
     def __init__(self):
-        # Setup the Tk frame including the manor in will the row/columns are 
+        # Setup the Tk frame including the manner in will the row/columns are 
         # expanded. IE. Expand all columns equally, but only expand in height
         # the message area
         tkinter.Frame.__init__(self)
@@ -375,7 +375,7 @@ class Gui(tkinter.Frame):
     def configPasswordEntry (self) :
         self.startButton.config(text = "Open Sessions", state = tkinter.NORMAL)
         self.chooseNsfButton.config(text = "Select Directory of SOURCE nsf files", state = tkinter.DISABLED)
-        self.chooseDestButton.config(text = "Select Directory of DESTINATION eml files", state = tkinter.DISABLED)
+        self.chooseDestButton.config(text = "Select Directory of DESTINATION files", state = tkinter.DISABLED)
         self.entryPassword.config(state = tkinter.NORMAL)
         self.formatTypeEML.config(state = tkinter.DISABLED)
         self.formatTypeMBOX.config(state = tkinter.DISABLED)
