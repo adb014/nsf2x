@@ -115,6 +115,25 @@ Development
    and we don't transfer the "$Draft" files, so only the "$Sent" view needs
    special treatment.
 
+   Translation
+   -----------
+   I installed the following packages to perform the translation tasks
+   
+   Gnutext binaries from : https://mlocati.github.io/articles/gettext-iconv-windows.html
+   POEdit binaries from : https://download.poedit.net/Poedit-1.8.12-setup.exe
+   
+   To Update the translation files do
+   
+   py pygettext.py -d nsf2x -o locale/new.pot -a nsf2x.py
+   msgmerge locale/lang/LC_MESSAGES/nsf2x.po locale/new.pot > locale/lang/LC_MESSAGES/new.po
+   move locale/new.pot locale/nsf2x.pot
+   move locale/lang/LC_MESSAGES/new.po locale/lang/LC_MESSAGES/nsf2x.po
+   # Edit the translation files
+   py msgfmt.py locale/lang/LC_MESSAGES/nsf2x.po
+   
+   Only French and English are currently available, though as I'm not a native
+   French speaker, corrections are always welcome.
+   
    Creation of PST Files
    --------------------
    The Windows COM interface doesn't allow certain fields of MailItem objects

@@ -4,6 +4,10 @@ dbateman@free.fr
 Based on nlconverter (https://code.google.com/p/nlconverter/) by
 Hugues Bernard <hugues.bernard@gmail.com>
 
+NSF2X supports multiple languages, using GNU GetText based on your regional
+settings. Only French and English are currently available, though as I'm not
+a native French speaker, corrections are always welcome.
+
 Quick Start
 -----------
    0. Install/Unzip the downloaded package on a Windows machine

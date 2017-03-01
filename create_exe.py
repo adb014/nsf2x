@@ -70,12 +70,22 @@ def which(program):
                 return exe_file
 
     return None
+ 
+def find_locale_files(locale):
+    ret = []
+    for root, dir, files in os.walk(locale) :
+        _files = ()
+        for file in files :
+            _files += (os.path.join(root, file),)
+        if _files :
+            ret += [(root, _files)]
+    return ret
     
 def main () :
     RT_BITMAP = 2
     RT_MANIFEST = 24
 
-    version = "1.2.15"
+    version = "1.2.17"
     author = "dbateman@free.fr"
     description="NSF2X - Converts Lotus NSF files to EML, MBOX or PST files..."
     
@@ -208,7 +218,10 @@ def main () :
           url='mailto:' + author,
           
           # data files to include
-          data_files=[(".", ("README.txt", "LICENSE")), ("src", ("create_exe.py", "nsf2x.py", "nsf2x.nsi", "mapiex.py", "testmapiex.py", "README.dev"))],
+          data_files=[(".", ("README.txt", "LICENSE")), 
+                      ("src", ("create_exe.py", "nsf2x.py", "nsf2x.nsi", 
+                               "mapiex.py", "testmapiex.py", "README.dev"))] +
+                        find_locale_files('locale'),
 
           # py2exe options
           zipfile=None,
