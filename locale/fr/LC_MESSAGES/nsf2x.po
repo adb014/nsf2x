@@ -1,1 +1,418 @@
+# French Translation for NSF2X.
+# Copyright (C) YEAR ORGANIZATION
+# David Bateman <dbateman@free.fr>, 2017.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: NSF2X v1.2.17\n"
+"POT-Creation-Date: 2017-03-01 16:08+Paris, Madrid\n"
+"PO-Revision-Date: 2017-03-01 16:45+0100\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Language: fr_FR\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: pygettext.py 1.5\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+"X-Language: fr_FR\n"
+"X-Source-Language: en\n"
+"X-Generator: Poedit 1.8.12\n"
+"X-Poedit-Basepath: ../../..\n"
+"X-Poedit-SearchPath-0: nsf2x.py\n"
 
+#: nsf2x.py:89
+msgid "NNOTES DLL can not be initialized (ErrorID %d)"
+msgstr "DLL NNOTES ne peut pas être initialisé (ID Erreur %d)"
+
+#: nsf2x.py:121
+msgid "NNOTES DLL not loaded"
+msgstr "DLL NNOTES ne peut pas être chargé"
+
+#: nsf2x.py:123
+msgid "NNOTES DLL : Database not loaded"
+msgstr "DLL NNOTES : Base de données pas chargé"
+
+#: nsf2x.py:264 nsf2x.py:600
+msgid "Lotus Notes Converter"
+msgstr "Convertisseur Lotus Notes"
+
+#: nsf2x.py:294
+msgid "Enter Lotus Notes password"
+msgstr "Entrez le mot de passe Lotus Notes"
+
+#: nsf2x.py:299 nsf2x.py:383 nsf2x.py:401
+msgid "Open Sessions"
+msgstr "Ouvrir Sessions"
+
+#: nsf2x.py:315
+msgid "Options"
+msgstr "Options"
+
+#: nsf2x.py:322 nsf2x.py:402
+msgid "Select Directory of SOURCE nsf files"
+msgstr "Sélectez le répretoire des fichiers nsf source"
+
+#: nsf2x.py:329 nsf2x.py:404
+msgid "Select Directory of DESTINATION files"
+msgstr "Sélectez le répertoire des fichiers destination"
+
+#: nsf2x.py:349
+msgid "Lotus Notes NSF file to EML, MBOX and PST file converter."
+msgstr "Convertisseur de fichier Lotus Notes NSF vers EML, MBOX et PST"
+
+#: nsf2x.py:350
+msgid "Contact dbateman@free.fr for more information.\n"
+msgstr "Contactez dbateman@free.fr pour plus de information.\n"
+
+#: nsf2x.py:357 nsf2x.py:448
+msgid "Source directory is : %s"
+msgstr "Répertoire source est : %s"
+
+#: nsf2x.py:364 nsf2x.py:450
+msgid "Destination directory is %s"
+msgstr "Répertoire destination est %s"
+
+#: nsf2x.py:376
+msgid "Connection to Notes established\n"
+msgstr "Connexion à Notes établi\n"
+
+#: nsf2x.py:379
+msgid "Check the Notes password\n"
+msgstr "Vérifier le mot de passe Notes\n"
+
+#: nsf2x.py:387
+msgid "Stop"
+msgstr "Arrêter"
+
+#: nsf2x.py:413 nsf2x.py:454
+msgid "Convert"
+msgstr "Convertir"
+
+#: nsf2x.py:457
+msgid "NSF2X Options"
+msgstr "Options de NSF2X"
+
+#: nsf2x.py:461
+msgid "Use different MBOXes for each sub-folder :"
+msgstr "Utilisez différents MBOX pour chaque sous-répertoire"
+
+#: nsf2x.py:464
+msgid "No"
+msgstr "Non"
+
+#: nsf2x.py:468
+msgid "Yes"
+msgstr "Oui"
+
+#: nsf2x.py:475
+msgid "Re-encryption of encrypted Notes messages :"
+msgstr "Réchiffrement des messages Notes chiffré"
+
+#: nsf2x.py:478
+msgid "None"
+msgstr "Aucun"
+
+#: nsf2x.py:482
+msgid "RC2 40bit"
+msgstr "RC2 40bit"
+
+#: nsf2x.py:486
+msgid "3DES 168bit"
+msgstr "3DES 168bit"
+
+#: nsf2x.py:490
+msgid "AES 128bit"
+msgstr "AES 128bit"
+
+#: nsf2x.py:494
+msgid "AES 256bit"
+msgstr "AES 256bit"
+
+#: nsf2x.py:501
+msgid "Error logging level :"
+msgstr "Niveau de journalisation"
+
+#: nsf2x.py:504
+msgid "Error"
+msgstr "Erreur"
+
+#: nsf2x.py:508
+msgid "Warning"
+msgstr "Avertissemnt"
+
+#: nsf2x.py:512
+msgid "Information"
+msgstr "Information"
+
+#: nsf2x.py:519
+msgid "Number of exceptions before giving up :"
+msgstr "Nombre d'exceptions avant arrêt :"
+
+#: nsf2x.py:534
+msgid "Infinite"
+msgstr "Sans limite"
+
+#: nsf2x.py:538
+msgid "Close"
+msgstr "Fermer"
+
+#: nsf2x.py:554
+msgid "Waiting for sub processes to terminate"
+msgstr "En attente de la fin du processus secondaire"
+
+#: nsf2x.py:566 nsf2x.py:630
+msgid "Error connecting to Lotus !"
+msgstr "Erreur de connexion à Lotus !"
+
+#: nsf2x.py:567 nsf2x.py:596 nsf2x.py:631 nsf2x.py:717 nsf2x.py:733
+msgid "Exception %s :"
+msgstr "Exception %s :"
+
+#: nsf2x.py:581
+msgid "Starting Convert : %s\n"
+msgstr "Demarrage du conversion : %s\n"
+
+#: nsf2x.py:583
+msgid ""
+"The MBOX file will not have the directory hierarchies present in NSF file\n"
+msgstr ""
+"Le fichier MBOX n'aura pas les hiérarchies de répertoire dans le fichier "
+"NSF\n"
+
+#: nsf2x.py:595
+msgid "Error converting database %s"
+msgstr "Erreur de conversion de base de données %s"
+
+#: nsf2x.py:599
+msgid "End of convert : %s\n"
+msgstr "Fin de conversion : %s\n"
+
+#: nsf2x.py:623
+msgid "Converting : %s "
+msgstr "Conversion : %s"
+
+#: nsf2x.py:633
+msgid "Empty Lotus session"
+msgstr "Session Lotis vide"
+
+#: nsf2x.py:636
+msgid "The database %s appears to be empty. Returning"
+msgstr "Le base de données %s semble d'être vide. Retour"
+
+#: nsf2x.py:658
+msgid "ERROR : Can not open Lotus database %s with C API (ErrorID %d)"
+msgstr ""
+"ERREUR : Ne peut pas ouvrir base de données Lotus %s avec API C (ID Erreur "
+"%d)"
+
+#: nsf2x.py:661
+msgid "Starting MIME encoding of messages"
+msgstr "Démarrage d'encodage MIME des messages"
+
+#: nsf2x.py:665 nsf2x.py:689
+msgid "Lotus Notes Converter - Phase 1/2 Converting MIME (%.1f%%)"
+msgstr "Convertisseur Lotus Notus - Phase 1/2 Conversion MIME  (%.1f%%)"
+
+#: nsf2x.py:680
+msgid "Can not convert message %d to MIME"
+msgstr "Ne peut pas convertir message %d en MIME"
+
+#: nsf2x.py:683
+msgid "Exception converting message %d to MIME : %s"
+msgstr "Exception de conversion de message %d en MIME : %s"
+
+#: nsf2x.py:694
+msgid "Too many exceptions during MIME conversion. Stopping\n"
+msgstr "Trop d'exception pendant conversion à MIME. Arrêt\n"
+
+#: nsf2x.py:698
+msgid "ERROR : The database %s appears to be empty. Returning"
+msgstr "ERREUR : Le base de données %s semble d'être vide. Arrêt"
+
+#: nsf2x.py:705 nsf2x.py:794
+msgid "Opening MBOX file - %s"
+msgstr "Ouverture fichier MBOX - %s"
+
+#: nsf2x.py:716
+msgid "Could not connect to Outlook !"
+msgstr "Impossible de se connecter à Outlook !"
+
+#: nsf2x.py:720
+msgid "Opening PST file - %s"
+msgstr "Ouverture du fichier PST - %s"
+
+#: nsf2x.py:732
+msgid "Could not connect to MAPI !"
+msgstr "Impossible de se connecter à MAPI !"
+
+#: nsf2x.py:736
+msgid "Starting importation of EML messages into mailbox"
+msgstr "Démarrage de l'importation des messages EML dans la boite à lettre"
+
+#: nsf2x.py:743 nsf2x.py:898
+msgid "Lotus Notes Converter - Phase 2/2 Import Message %d of %d (%.1f%%)"
+msgstr ""
+"Convertisseur Lotus Notes _ Phase 2/2 Importation de Message %d sur %d (%1f%"
+"%)"
+
+# Keep the name unused in outlook
+#: nsf2x.py:752 nsf2x.py:767 nsf2x.py:779 nsf2x.py:841
+msgid "Sent"
+msgstr "Éléments envoyés"
+
+# Keep the name used in outlook
+#: nsf2x.py:754 nsf2x.py:769 nsf2x.py:781 nsf2x.py:844
+msgid "Inbox"
+msgstr "Boîte de réception"
+
+#: nsf2x.py:760 nsf2x.py:789
+msgid "Creating directory %s"
+msgstr "Création de répertoire %s"
+
+#: nsf2x.py:762 nsf2x.py:791
+msgid "Can not create directory %s"
+msgstr "Ne peut pas créer le répertoire %s"
+
+#: nsf2x.py:774
+msgid "Could not open folder : %s"
+msgstr "Ne pouvait pas ouvrir le répertoire : %s"
+
+#: nsf2x.py:828
+msgid "Ignoring message %d of form '%s' with empty body"
+msgstr "Ignorer le message% d de la forme '% s' avec le corps vide"
+
+#: nsf2x.py:830
+msgid "Ignoring message %d of form '%s' without MIME body"
+msgstr "Ignorer le message% d de la forme '% s' sans corps MIME"
+
+#: nsf2x.py:833 nsf2x.py:887
+msgid "#### Subject : %s"
+msgstr "#### Sujet: %s"
+
+#: nsf2x.py:836
+msgid "Skipping as probably not a message"
+msgstr "Sauter. Probablement pas un message. "
+
+#: nsf2x.py:869
+msgid "ERROR : Can not write Lotus MIME message to a file"
+msgstr "ERREUR : Ne peut pas écrire message MIME de Lotis au fichier"
+
+#: nsf2x.py:883
+msgid "Exception for message %d (%s) :"
+msgstr "Exception pour la message %d (%s) :"
+
+#: nsf2x.py:906
+msgid "Too many exceptions during mail importation. Stopping"
+msgstr "Trop d'exception pendant importation des mail. Arrêt"
+
+#: nsf2x.py:910
+msgid "Finished populating : %s"
+msgstr "Fin de conversion : %s"
+
+#: nsf2x.py:911
+msgid "Exceptions: %d ... Documents OK : %d Untreated : %d\n"
+msgstr "Exceptions: %d ... Documents OK : %d Non traité : %d\n"
+
+#: nsf2x.py:919
+msgid "Notes message has empty NoteID"
+msgstr "Le NoteID du message Notes est vide"
+
+#: nsf2x.py:932
+msgid "Can not open document id 0x%s (ErrorID : %d)"
+msgstr "Ne peut pas ouvrir le document id 0x%s (ID Erreur : %d)"
+
+#: nsf2x.py:938
+msgid "Removing $KeepPrivate item from note id 0x%s"
+msgstr "Suppression de l'élément $KeepPrivate de note id 0x%s"
+
+#: nsf2x.py:950
+msgid "Document note id 0x%s is encrypted."
+msgstr "Document note id 0x%s est chiffré."
+
+#: nsf2x.py:954
+msgid "Document note id 0x%s is signed"
+msgstr "Document note id 0x%s est signé"
+
+#: nsf2x.py:957
+msgid "Document note id 0x%s is encrypted, cannot be converted."
+msgstr "Document note id 0x%s est chiffré et ne peut pas être converti"
+
+#: nsf2x.py:973
+msgid ""
+"MIMEConvertCDParts : Error converting note id 0x%s to MIME type text/html"
+msgstr ""
+"MIMEConvertCDParts : Erreur lors de la conversion de note id 0x%s à MIME "
+"type text/html"
+
+#: nsf2x.py:974
+msgid "MIMEConvertCDParts : Attempting to convert to text/plain"
+msgstr "MIMEConvertCDParts : Tentative de conversion à text/plain"
+
+#: nsf2x.py:984
+msgid "Error calling NSFNoteUpdate(%d)"
+msgstr "Erreur appelant NSFNoteUpdate(%d)"
+
+#: nsf2x.py:987
+msgid "Error calling MIMEConvertCDParts(%d)"
+msgstr "Erreur appelant MIMEConvertCDParts(%d)"
+
+#: nsf2x.py:992
+msgid "Error calling MMCreateConvControls(%d)"
+msgstr "Erreur appelant MMCreateConvControls(%d)"
+
+#: nsf2x.py:1136 nsf2x.py:1153
+msgid "Exception : %s"
+msgstr "Exception : %s"
+
+#: nsf2x.py:1140
+msgid "Windows cryptographic provider does not support AES encryption"
+msgstr "Windows cryptographic provider ne support pas le chiffrement AES"
+
+#: nsf2x.py:1141
+msgid "Falling back to 3DES 168bit encryption"
+msgstr "Se rebattre sur le chiffrement 3DES 168bit"
+
+#: nsf2x.py:1157
+msgid "Can not open Windows cryptographic provider"
+msgstr "Ne peut pas ouvris Windows cryptographic provider"
+
+#: nsf2x.py:1176
+msgid "Could not obtain the users Exchange certificate."
+msgstr "Ne pouvait pas obtenir le certificat d'Exchange de l'utilisateur"
+
+#: nsf2x.py:1179
+msgid "Disabling all encryption !!"
+msgstr "Désactivation de tout chiffrement !!"
+
+#: nsf2x.py:1208
+msgid "ERROR : Unrecognised encryption selected"
+msgstr "ERREUR : Chiffrement non reconnu sélectionné"
+
+#: nsf2x.py:1228
+msgid "Message 0x%s has no MIME body"
+msgstr "Message 0x%s n'a pas corps MIME"
+
+#: nsf2x.py:1229
+msgid "Type : %d"
+msgstr "Type : %d"
+
+#: nsf2x.py:1230
+msgid "Subject : %s"
+msgstr "Sujet : %s"
+
+#: nsf2x.py:1237 nsf2x.py:1252
+msgid "INFO : "
+msgstr "INFO : "
+
+#: nsf2x.py:1242
+msgid "ERROR : "
+msgstr "ERREUR : "
+
+#: nsf2x.py:1247
+msgid "WARN : "
+msgstr "AVERT : "
+
+#: nsf2x.py:1256
+msgid "ERROR : Unrecognised Error Level given to log function"
+msgstr "ERREUR : Le niveau d'erreur fourni au fonction log n'a pas réconnu"
