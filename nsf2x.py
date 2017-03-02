@@ -52,7 +52,8 @@ notesDllPathList = [r'c:/notes', r'd:/notes', r'c:/program files/notes', r'd:/pr
                     r'c:/program files/ibm/notes', r'd:/program files/ibm/notes',
                     r'c:/program files (x86)/ibm/notes', r'd:/program files (x86)/ibm/notes']
 
-# Setup i8n
+# Setup i8n. This has to stay here rather than at the end of the file so that
+# "_" is defined 
 lang = locale.windows_locale.get(ctypes.windll.kernel32.GetUserDefaultLCID())
 localedir = os.path.join(os.path.abspath(os.path.dirname(sys.argv[0])), 'locale')
 translate = gettext.translation('nsf2x', localedir, languages=[lang], fallback=True)
@@ -658,7 +659,7 @@ class Gui(tkinter.Frame):
         _NotesEntries = NotesEntries()
         stat = _NotesEntries.NSFDbOpen(path)
         if stat != 0:
-            raise ValueError(_("ERROR : Can not open Lotus database %s with C API (ErrorID %d)") %
+            raise ValueError(_("Can not open Lotus database %s with C API (ErrorID %d)") %
                              (path, stat))
 
         self.log(ErrorLevel.NORMAL, _("Starting MIME encoding of messages"))
@@ -698,7 +699,7 @@ class Gui(tkinter.Frame):
             return False
 
         if c <= 0:
-            raise ValueError(_("ERROR : The database %s appears to be empty. Returning") % src)
+            raise ValueError(_("The database %s appears to be empty. Returning") % src)
 
         f = None
         MAPIrootFolder = None
@@ -743,7 +744,8 @@ class Gui(tkinter.Frame):
         for fld in dBNotes.Views:
             if  not (fld.Name == "($Sent)" or fld.IsFolder) or fld.EntryCount <= 0:
                 if fld.EntryCount > 0:
-                    tl.title(_("Lotus Notes Converter - Phase 2/2 Import Message %d of %d (%.1f%%)") % (c, ac, float(10.*(ac + 9.*c)/ac)))
+                    tl.title(_("Lotus Notes Converter - Phase 2/2 Import Message %d of %d (%.1f%%)") % 
+                                (c, ac, float(10.*(ac + 9.*c)/ac)))
                     self.update()
                 if not self.running:
                     return False
@@ -850,7 +852,8 @@ class Gui(tkinter.Frame):
                                     eml = os.path.join(self.destPath, dest, fld.Name,
                                                        (str(d) + ".eml"))
 
-                                # Need to treat as binary so that windows doesn't convert \n\r to \n\n\r
+                                # Need to treat as binary so that windows doesn't convert 
+                                # \n\r to \n\n\r
                                 f = open(eml, "wb")
                             elif self.Format.get() == Format.PST:
                                 (fd, eml) = tempfile.mkstemp(suffix=".eml")
@@ -869,7 +872,7 @@ class Gui(tkinter.Frame):
                             elif self.Format.get() == Format.EML:
                                 f.close()
                         else:
-                            raise NameError(_("ERROR : Can not write Lotus MIME message to a file"))
+                            raise NameError(_("Can not write Lotus MIME message to a file"))
 
                 except (pywintypes.com_error, OSError) as ex:
                     e += 1 #count the exceptions
@@ -894,7 +897,8 @@ class Gui(tkinter.Frame):
                     doc = fld.GetNextDocument(doc)
 
                     if self.Format.get() == Format.MBOX:
-                        # MBOX is recognized by "\nFrom " string. So add a trailing \n to each message to ensure this format
+                        # MBOX is recognized by "\nFrom " string. So add a trailing \n
+                        # to each message to ensure this format
                         f.write(b"\n")
 
                     if (c % 20) == 0:
@@ -911,7 +915,8 @@ class Gui(tkinter.Frame):
         if self.Format.get() == Format.MBOX and self.MBOXType.get() == SubdirectoryMBOX.NO:
             f.close()
         self.log(ErrorLevel.NORMAL, _("Finished populating : %s") % dest)
-        self.log(ErrorLevel.NORMAL, _("Exceptions: %d ... Documents OK : %d Untreated : %d\n") % (e, c - e, max(0, ac - c)))
+        self.log(ErrorLevel.NORMAL, _("Exceptions: %d ... Documents OK : %d Untreated : %d\n") %
+                                     (e, c - e, max(0, ac - c)))
 
         return True
 
@@ -932,13 +937,15 @@ class Gui(tkinter.Frame):
                                                    _NotesEntries.OPEN_RAW_MIME)
 
         if stat != 0:
-            self.log(ErrorLevel.ERROR, _("Can not open document id 0x%s (ErrorID : %d)") % (doc.NoteID, stat))
+            self.log(ErrorLevel.ERROR, _("Can not open document id 0x%s (ErrorID : %d)") %
+                     (doc.NoteID, stat))
         else:
             try:
                 # If present, $KeepPrivate will prevent conversion, so nuke the sucka
                 tmp = doc.GetFirstItem("$KeepPrivate")
                 if tmp != None:
-                    self.log(ErrorLevel.INFO, _("Removing $KeepPrivate item from note id 0x%s") % doc.NoteID)
+                    self.log(ErrorLevel.INFO, _("Removing $KeepPrivate item from note id 0x%s") %
+                             doc.NoteID)
                     _NotesEntries.NSFItemDelete(hNote, "$KeepPrivate")
 
                 # The C API identifies some unencrypted mail as "Sealed". These don't need
@@ -950,11 +957,13 @@ class Gui(tkinter.Frame):
                     # (we don't care about the signature)
                     stat, isSigned, isSealed = _NotesEntries.NSFNoteIsSignedOrSealed(hNote)
                     if isSealed:
-                        self.log(ErrorLevel.INFO, _("Document note id 0x%s is encrypted.") % doc.NoteID)
+                        self.log(ErrorLevel.INFO, _("Document note id 0x%s is encrypted.") %
+                                 doc.NoteID)
                         DECRYPT_ATTACHMENTS_IN_PLACE = ctypes.c_uint16(1)
                         stat = _NotesEntries.NSFNoteDecrypt(hNote, DECRYPT_ATTACHMENTS_IN_PLACE)
                     if isSigned:
-                        self.log(ErrorLevel.INFO, _("Document note id 0x%s is signed") % doc.NoteID)
+                        self.log(ErrorLevel.INFO, _("Document note id 0x%s is signed") %
+                                 doc.NoteID)
 
                         if stat != 0:
                             self.log(ErrorLevel.ERROR, _("Document note id 0x%s is encrypted, cannot be converted.") % doc.NoteID)
@@ -1208,7 +1217,7 @@ class Gui(tkinter.Frame):
                                                     "Parameters" : None}
                             else:
                                 # This shouldn't be possible
-                                raise NameError(_("ERROR : Unrecognised encryption selected"))
+                                raise NameError(_("Unrecognised encryption selected"))
 
                             encryptparams = {"MsgEncodingType" : encodingtype, "CryptProv" :
                                              self.hCryptoProv, "ContentEncryptionAlgorithm" :
