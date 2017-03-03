@@ -5,8 +5,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: NSF2X v1.2.17\n"
-"POT-Creation-Date: 2017-03-02 14:59+0100\n"
-"PO-Revision-Date: 2017-03-03 09:33+0100\n"
+"POT-Creation-Date: 2017-03-03 09:50+Paris, Madrid\n"
+"PO-Revision-Date: 2017-03-03 09:55+0100\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "Language: fr_FR\n"
@@ -22,7 +22,6 @@ msgstr ""
 "X-Poedit-SearchPath-0: nsf2x.py\n"
 
 #: nsf2x.py:93
-#, python-format
 msgid "NNOTES DLL can not be initialized (ErrorID %d)"
 msgstr "DLL NNOTES ne peut pas être initialisé (ID Erreur %d)"
 
@@ -67,13 +66,11 @@ msgid "Contact dbateman@free.fr for more information.\n"
 msgstr "Contacter dbateman@free.fr pour plus d'information.\n"
 
 #: nsf2x.py:361 nsf2x.py:452
-#, python-format
 msgid "Source directory is : %s"
 msgstr "Répertoire source : %s"
 
-#: nsf2x.py:368 nsf2x.py:454
-#, python-format
-msgid "Destination directory is %s"
+#: nsf2x.py:368
+msgid "Destination directory is : %s"
 msgstr "Répertoire destination : %s"
 
 #: nsf2x.py:380
@@ -91,6 +88,10 @@ msgstr "Arrêter"
 #: nsf2x.py:417 nsf2x.py:458
 msgid "Convert"
 msgstr "Convertir"
+
+#: nsf2x.py:454
+msgid "Destination directory is %s"
+msgstr "Répertoire destination : %s"
 
 #: nsf2x.py:461
 msgid "NSF2X Options"
@@ -169,12 +170,10 @@ msgid "Error connecting to Lotus !"
 msgstr "Erreur de connexion à Lotus !"
 
 #: nsf2x.py:571 nsf2x.py:600 nsf2x.py:635 nsf2x.py:721 nsf2x.py:737
-#, python-format
 msgid "Exception %s :"
 msgstr "Exception %s :"
 
 #: nsf2x.py:585
-#, python-format
 msgid "Starting Convert : %s\n"
 msgstr "Démarrage du conversion : %s\n"
 
@@ -182,20 +181,18 @@ msgstr "Démarrage du conversion : %s\n"
 msgid ""
 "The MBOX file will not have the directory hierarchies present in NSF file\n"
 msgstr ""
-"Le fichier MBOX n'aura pas les hiérarchies de répertoire dans le fichier NSF\n"
+"Le fichier MBOX n'aura pas les hiérarchies de répertoire dans le fichier "
+"NSF\n"
 
 #: nsf2x.py:599
-#, python-format
 msgid "Error converting database %s"
 msgstr "Erreur de conversion de base de données %s"
 
 #: nsf2x.py:603
-#, python-format
 msgid "End of convert : %s\n"
 msgstr "Fin de conversion : %s\n"
 
 #: nsf2x.py:627
-#, python-format
 msgid "Converting : %s "
 msgstr "Conversion : %s"
 
@@ -204,31 +201,27 @@ msgid "Empty Lotus session"
 msgstr "Session Lotus vide"
 
 #: nsf2x.py:640 nsf2x.py:702
-#, python-format
 msgid "The database %s appears to be empty. Returning"
 msgstr "Le base de données %s semble être vide. Retour"
 
 #: nsf2x.py:662
-#, python-format
 msgid "Can not open Lotus database %s with C API (ErrorID %d)"
-msgstr "Ne peut pas ouvrir la base de données Lotus %s avec API C (ID Erreur %d)"
+msgstr ""
+"Ne peut pas ouvrir la base de données Lotus %s avec API C (ID Erreur %d)"
 
 #: nsf2x.py:665
 msgid "Starting MIME encoding of messages"
 msgstr "Démarrage d'encodage MIME des messages"
 
 #: nsf2x.py:669 nsf2x.py:693
-#, python-format
 msgid "Lotus Notes Converter - Phase 1/2 Converting MIME (%.1f%%)"
 msgstr "Convertisseur Lotus Notus - Phase 1/2 Conversion MIME  (%.1f%%)"
 
 #: nsf2x.py:684
-#, python-format
 msgid "Can not convert message %d to MIME"
 msgstr "Ne peut pas convertir message %d en MIME"
 
 #: nsf2x.py:687
-#, python-format
 msgid "Exception converting message %d to MIME : %s"
 msgstr "Exception de conversion de message %d en MIME : %s"
 
@@ -237,7 +230,6 @@ msgid "Too many exceptions during MIME conversion. Stopping\n"
 msgstr "Trop d'exceptions pendant conversion à MIME. Arrêt\n"
 
 #: nsf2x.py:709 nsf2x.py:799
-#, python-format
 msgid "Opening MBOX file - %s"
 msgstr "Ouverture fichier MBOX - %s"
 
@@ -246,7 +238,6 @@ msgid "Could not connect to Outlook !"
 msgstr "Impossible de se connecter à Outlook !"
 
 #: nsf2x.py:724
-#, python-format
 msgid "Opening PST file - %s"
 msgstr "Ouverture du fichier PST - %s"
 
@@ -259,10 +250,10 @@ msgid "Starting importation of EML messages into mailbox"
 msgstr "Démarrage de l'importation des messages EML dans la boite aux lettres"
 
 #: nsf2x.py:747 nsf2x.py:905
-#, python-format
 msgid "Lotus Notes Converter - Phase 2/2 Import Message %d of %d (%.1f%%)"
 msgstr ""
-"Convertisseur Lotus Notes - Phase 2/2 Importation de Message %d sur %d (%1f%%)"
+"Convertisseur Lotus Notes - Phase 2/2 Importation de Message %d sur %d (%1f%"
+"%)"
 
 # Keep the name unused in outlook
 #: nsf2x.py:757 nsf2x.py:772 nsf2x.py:784 nsf2x.py:846
@@ -275,32 +266,26 @@ msgid "Inbox"
 msgstr "Boîte de réception"
 
 #: nsf2x.py:765 nsf2x.py:794
-#, python-format
 msgid "Creating directory %s"
 msgstr "Création du répertoire %s"
 
 #: nsf2x.py:767 nsf2x.py:796
-#, python-format
 msgid "Can not create directory %s"
 msgstr "Ne peut pas créer le répertoire %s"
 
 #: nsf2x.py:779
-#, python-format
 msgid "Could not open folder : %s"
 msgstr "Ouverture du répertoire %s impossibble"
 
 #: nsf2x.py:833
-#, python-format
 msgid "Ignoring message %d of form '%s' with empty body"
 msgstr "Ignorer le message %d de la forme '%s' avec le corps vide"
 
 #: nsf2x.py:835
-#, python-format
 msgid "Ignoring message %d of form '%s' without MIME body"
 msgstr "Ignorer le message %d de la forme '%s' sans corps MIME"
 
 #: nsf2x.py:838 nsf2x.py:893
-#, python-format
 msgid "#### Subject : %s"
 msgstr "#### Sujet: %s"
 
@@ -313,7 +298,6 @@ msgid "Can not write Lotus MIME message to a file"
 msgstr "Ne peut pas écrire message MIME de Lotus vers un fichier"
 
 #: nsf2x.py:889
-#, python-format
 msgid "Exception for message %d (%s) :"
 msgstr "Exception pour le message %d (%s) :"
 
@@ -322,12 +306,10 @@ msgid "Too many exceptions during mail importation. Stopping"
 msgstr "Trop d'exceptions pendant l'importation des mails. Arrêt"
 
 #: nsf2x.py:917
-#, python-format
 msgid "Finished populating : %s"
 msgstr "Fin de conversion : %s"
 
 #: nsf2x.py:918
-#, python-format
 msgid "Exceptions: %d ... Documents OK : %d Untreated : %d\n"
 msgstr "Exceptions: %d ... Documents OK : %d Non traité : %d\n"
 
@@ -336,58 +318,49 @@ msgid "Notes message has empty NoteID"
 msgstr "Le NoteID du message Notes est vide"
 
 #: nsf2x.py:940
-#, python-format
 msgid "Can not open document id 0x%s (ErrorID : %d)"
 msgstr "Ne peut pas ouvrir le document id 0x%s (ID Erreur : %d)"
 
 #: nsf2x.py:947
-#, python-format
 msgid "Removing $KeepPrivate item from note id 0x%s"
 msgstr "Suppression de l'élément $KeepPrivate de note id 0x%s"
 
 #: nsf2x.py:960
-#, python-format
 msgid "Document note id 0x%s is encrypted."
 msgstr "Le document note id 0x%s est chiffré."
 
 #: nsf2x.py:965
-#, python-format
 msgid "Document note id 0x%s is signed"
 msgstr "Le document note id 0x%s est signé"
 
 #: nsf2x.py:969
-#, python-format
 msgid "Document note id 0x%s is encrypted, cannot be converted."
 msgstr "Le document note id 0x%s est chiffré et ne peut pas être converti"
 
 #: nsf2x.py:985
-#, python-format
-msgid "MIMEConvertCDParts : Error converting note id 0x%s to MIME type text/html"
+msgid ""
+"MIMEConvertCDParts : Error converting note id 0x%s to MIME type text/html"
 msgstr ""
-"MIMEConvertCDParts : Erreur lors de la conversion de note id 0x%s à MIME type "
-"text/html"
+"MIMEConvertCDParts : Erreur lors de la conversion de note id 0x%s à MIME "
+"type text/html"
 
 #: nsf2x.py:986
 msgid "MIMEConvertCDParts : Attempting to convert to text/plain"
 msgstr "MIMEConvertCDParts : Tentative de conversion à text/plain"
 
 #: nsf2x.py:996
-#, python-format
 msgid "Error calling NSFNoteUpdate(%d)"
 msgstr "Erreur appelant NSFNoteUpdate(%d)"
 
 #: nsf2x.py:999
-#, python-format
 msgid "Error calling MIMEConvertCDParts(%d)"
 msgstr "Erreur appelant MIMEConvertCDParts(%d)"
 
 #: nsf2x.py:1004
-#, python-format
 msgid "Error calling MMCreateConvControls(%d)"
 msgstr "Erreur appelant MMCreateConvControls(%d)"
 
 #: nsf2x.py:1148 nsf2x.py:1165
-#, python-format
 msgid "Exception : %s"
 msgstr "Exception : %s"
 
@@ -416,17 +389,14 @@ msgid "Unrecognised encryption selected"
 msgstr "Chiffrement non reconnu sélectionné"
 
 #: nsf2x.py:1240
-#, python-format
 msgid "Message 0x%s has no MIME body"
 msgstr "Message 0x%s n'a pas corps MIME"
 
 #: nsf2x.py:1241
-#, python-format
 msgid "Type : %d"
 msgstr "Type : %d"
 
 #: nsf2x.py:1242
-#, python-format
 msgid "Subject : %s"
 msgstr "Sujet : %s"
 
@@ -441,6 +411,10 @@ msgstr "ERREUR : "
 #: nsf2x.py:1259
 msgid "WARN : "
 msgstr "WARN : "
+
+#: nsf2x.py:1268
+msgid "ERROR : Unrecognised Error Level given to log function"
+msgstr "ERREUR : Le niveau d'erreur fourni au fonction log n'est pas reconnu"
 
 #~ msgid "ERROR : The database %s appears to be empty. Returning"
 #~ msgstr "ERREUR : Le base de données %s semble d'être vide. Arrêt"
