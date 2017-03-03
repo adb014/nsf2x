@@ -4,9 +4,9 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: NSF2X v1.2.17\n"
-"POT-Creation-Date: 2017-03-03 09:50+Paris, Madrid\n"
-"PO-Revision-Date: 2017-03-03 09:55+0100\n"
+"Project-Id-Version: NSF2X v1.2.18\n"
+"POT-Creation-Date: 2017-03-03 17:54+Paris, Madrid\n"
+"PO-Revision-Date: 2017-03-03 17:59+0100\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "Language: fr_FR\n"
@@ -41,8 +41,8 @@ msgstr "Convertisseur Lotus Notes"
 msgid "Enter Lotus Notes password"
 msgstr "Entrer le mot de passe Lotus Notes"
 
-#: nsf2x.py:303 nsf2x.py:387 nsf2x.py:405
-msgid "Open Sessions"
+#: nsf2x.py:303
+msgid "Open Session"
 msgstr "Ouvrir la session"
 
 #: nsf2x.py:319
@@ -80,6 +80,10 @@ msgstr "Connexion à Notes établie\n"
 #: nsf2x.py:383
 msgid "Check the Notes password\n"
 msgstr "Vérifier le mot de passe Notes\n"
+
+#: nsf2x.py:387 nsf2x.py:405
+msgid "Open Sessions"
+msgstr "Ouvrir la session"
 
 #: nsf2x.py:391
 msgid "Stop"
@@ -143,7 +147,7 @@ msgstr "Erreur"
 
 #: nsf2x.py:512
 msgid "Warning"
-msgstr "Avertissemnt"
+msgstr "Avertissement"
 
 #: nsf2x.py:516
 msgid "Information"
@@ -252,10 +256,10 @@ msgstr "Démarrage de l'importation des messages EML dans la boite aux lettres"
 #: nsf2x.py:747 nsf2x.py:905
 msgid "Lotus Notes Converter - Phase 2/2 Import Message %d of %d (%.1f%%)"
 msgstr ""
-"Convertisseur Lotus Notes - Phase 2/2 Importation de Message %d sur %d (%1f%"
+"Convertisseur Lotus Notes - Phase 2/2 Importation de Message %d sur %d (%.1f%"
 "%)"
 
-# Keep the name unused in outlook
+# Keep the name used in outlook
 #: nsf2x.py:757 nsf2x.py:772 nsf2x.py:784 nsf2x.py:846
 msgid "Sent"
 msgstr "Éléments envoyés"
