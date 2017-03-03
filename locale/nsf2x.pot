@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2017-03-02 14:52+Paris, Madrid\n"
+"POT-Creation-Date: 2017-03-03 17:54+Paris, Madrid\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -35,8 +35,8 @@ msgstr ""
 msgid "Enter Lotus Notes password"
 msgstr ""
 
-#: nsf2x.py:303 nsf2x.py:387 nsf2x.py:405
-msgid "Open Sessions"
+#: nsf2x.py:303
+msgid "Open Session"
 msgstr ""
 
 #: nsf2x.py:319
@@ -64,8 +64,8 @@ msgstr ""
 msgid "Source directory is : %s"
 msgstr ""
 
-#: nsf2x.py:368 nsf2x.py:454
-msgid "Destination directory is %s"
+#: nsf2x.py:368
+msgid "Destination directory is : %s"
 msgstr ""
 
 #: nsf2x.py:380
@@ -78,12 +78,20 @@ msgid ""
 "Check the Notes password\n"
 msgstr ""
 
+#: nsf2x.py:387 nsf2x.py:405
+msgid "Open Sessions"
+msgstr ""
+
 #: nsf2x.py:391
 msgid "Stop"
 msgstr ""
 
 #: nsf2x.py:417 nsf2x.py:458
 msgid "Convert"
+msgstr ""
+
+#: nsf2x.py:454
+msgid "Destination directory is %s"
 msgstr ""
 
 #: nsf2x.py:461
