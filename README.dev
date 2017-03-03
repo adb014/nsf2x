@@ -69,6 +69,25 @@ Development
    created zip file directly, otherwise after copying the files, you'll
    need to rezip the "dist" directory for distribution.
 
+   Translation
+   -----------
+   I installed the following packages to perform the translation tasks
+   
+   Gnutext binaries from : https://mlocati.github.io/articles/gettext-iconv-windows.html
+   POEdit binaries from : https://download.poedit.net/Poedit-1.8.12-setup.exe
+   
+   To Update the translation files do
+   
+   py pygettext.py -d nsf2x -o locale/new.pot -a nsf2x.py
+   msgmerge locale/lang/LC_MESSAGES/nsf2x.po locale/new.pot > locale/lang/LC_MESSAGES/new.po
+   move locale/new.pot locale/nsf2x.pot
+   move locale/lang/LC_MESSAGES/new.po locale/lang/LC_MESSAGES/nsf2x.po
+   # Edit the translation files with POEdit
+   py msgfmt.py locale/lang/LC_MESSAGES/nsf2x.po
+   
+   Only French and English are currently available, though as I'm not a native
+   French speaker, corrections are always welcome.
+
    Creation of EML Files
    ---------------------
    By converting all messages to MIME before writing the EML files we ensure
@@ -96,7 +115,7 @@ Development
    If the content of a mail is encrypted, it must first be decrypted before
    conversion to MIME. However as the Lotus Notes encryption is proprietary the
    encryption can't easily be converted to SMIME and so the existing encryption
-   is lost when creating the EML files, though NSF2X can attempts to recreate
+   is lost when creating the EML files, though NSF2X can attempt to recreate
    an SMIME encrypted mail.
   
    Only the mail is converted to EML files. All of the calendar events, etc in 
@@ -114,25 +133,6 @@ Development
    or has a name "$Sent", "$Inbox", "$Draft". The "$Inbox" view is also a folder
    and we don't transfer the "$Draft" files, so only the "$Sent" view needs
    special treatment.
-
-   Translation
-   -----------
-   I installed the following packages to perform the translation tasks
-   
-   Gnutext binaries from : https://mlocati.github.io/articles/gettext-iconv-windows.html
-   POEdit binaries from : https://download.poedit.net/Poedit-1.8.12-setup.exe
-   
-   To Update the translation files do
-   
-   py pygettext.py -d nsf2x -o locale/new.pot -a nsf2x.py
-   msgmerge locale/lang/LC_MESSAGES/nsf2x.po locale/new.pot > locale/lang/LC_MESSAGES/new.po
-   move locale/new.pot locale/nsf2x.pot
-   move locale/lang/LC_MESSAGES/new.po locale/lang/LC_MESSAGES/nsf2x.po
-   # Edit the translation files with POEdit
-   py msgfmt.py locale/lang/LC_MESSAGES/nsf2x.po
-   
-   Only French and English are currently available, though as I'm not a native
-   French speaker, corrections are always welcome.
    
    Creation of PST Files
    --------------------
@@ -146,7 +146,7 @@ Development
    Using Outlook to import EML files
    .................................
 
-   Outlook can  open EML files directly from the Windows shell, but
+   Outlook can open EML files directly from the Windows shell, but
    can't do it from the COM interface. Therefore, for each EML file I
    launch an Outlook sub-process with the "/eml" command line flag to ensure
    that the file is interpreted as EML. As the loaded file will then be in

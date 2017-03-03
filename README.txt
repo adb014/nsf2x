@@ -16,7 +16,7 @@ Quick Start
    3. Optionally, but recommended, launch Outlook
    4. Launch "nsf2x.exe"
    5. Enter the Lotus Notes password
-   6. Press the "Open Session" to open the connection to Notes
+   6. Press the "Open Session" button to open the connection to Notes
    7. Select the output type: EML, MBOX or PST
    8. Modify the conversion options as wanted
    9. Enter the source path of the temporary location with the "*.nsf" files
@@ -33,7 +33,9 @@ decrypts these mail in its output EML, and MBOX files, as NSF2X can't use the
 Notes encryption in the EML files. So if you care about the security of your mail
 archives, store them on encrypted disks after conversion. You've been warned.
 However, a mail that is encrypted in Notes can be re-encrypted with the users 
-certificate in the PST file, if you have their certificates.
+certificate, if you have their certificates installed in the Microsoft Crypto
+Store. These encrypted mails are directly useable by Outlook but you might
+have to export the users certificate to read the EML or MBOX exported files.
 
 NSF2X is also relatively slow for conversion to PST files, 10000 mails took me about
 30 minutes to convert on a reasonable laptop. So those 2GB NSF files of yours
@@ -126,10 +128,10 @@ Details
    So that NSF2X can have access to Lotus Notes it needs your Lotus Notes
    password. Enter into the password box of NSF2X
 
-   6. Press the "Open Session" to open the connection to Notes
-  ------------------------------------------------------------
+   6. Press the "Open Session" button to open the connection to Notes
+  -------------------------------------------------------------------
    Pressing this button opens the connection to Lotus Notes via a Windows 
-   COM interface. At this point the password selection is  deactivated, but
+   COM interface. At this point the password selection is deactivated, but
    the source and destination path entries are activated.
    
    7. Select the output type: EML, MBOX or PST
@@ -171,7 +173,7 @@ Details
 
    8. Modify the conversion options as wanted
   -------------------------------------------   
-   Using the "Options" button the user can modify three parameters of NSF2X.
+   Using the "Options" button the user can modify four parameters of NSF2X.
    The options that are be modified are discussed below
    
    Use different MBOXes for each sub-folder :
@@ -208,7 +210,8 @@ Details
    certificate store (for example Thunderbird), the user might need to export
    their certificate and re-import it into their mail client to be able to
    read the encrypted mails. This should not be the case for Outlook on the
-   same machine.
+   same machine. The certificates can be exported via Outlook or Internet 
+   Explorer in a variety of formats.
 
    Error logging level
    ...................
@@ -291,8 +294,8 @@ Details
    
    To manually transfer these files, the message can be dragged to the Windows
    Desktop. Lotus will then save them to an EML file via a different mechanism
-   used by NSF2X. These EML files can be easily treated for the EML or MBOX
-   message formats of NSF2X. 
+   than used by NSF2X. These EML files can be easily treated for the EML or
+   MBOX message formats of NSF2X. 
    
    For the PST format the manner to import these messages manually into the PST
    file is to 

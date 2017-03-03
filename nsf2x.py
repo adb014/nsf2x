@@ -300,7 +300,7 @@ class Gui(tkinter.Frame):
         self.entryPassword.bind("<FocusIn>", self.bindEntry)
 
         # Action button
-        self.startButton = tkinter.Button(self.master, text=_("Open Sessions"),
+        self.startButton = tkinter.Button(self.master, text=_("Open Session"),
                                           command=self.doConvert, relief=tkinter.GROOVE)
         self.startButton.grid(row=1, column=3, columnspan=2, sticky=tkinter.E+tkinter.W)
 
@@ -365,7 +365,7 @@ class Gui(tkinter.Frame):
                                self.destPath, '-mustexist', True)
         if dirname != "" and type(dirname) is not tuple and str(dirname) != "":
             self.destPath = dirname.replace('/', '\\')
-            self.chooseDestButton.config(text=_("Destination directory is %s") % self.destPath)
+            self.chooseDestButton.config(text=_("Destination directory is : %s") % self.destPath)
 
     def bindEntry(self, dummy_event=None):
         """Blank the password field and set it in password mode"""
