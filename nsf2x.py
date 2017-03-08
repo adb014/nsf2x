@@ -34,6 +34,10 @@ import win32com.client #NB : Calls to COM are starting with an uppercase
 import pywintypes
 import win32crypt
 import win32cryptcon
+import winreg
+import platform
+import subprocess
+import shutil
 
 try:
     # Python 3.x
@@ -76,6 +80,18 @@ class ErrorLevel:
 
 class Exceptions:
     EX_1, EX_10, EX_100, EX_INF = list(range(4))
+    
+# FIXME: Should this enum be combined with SubdirectoryMBOX ?
+class Helper:
+    NO, YES = list(range(2))
+    
+def OutlookPath () :
+    aReg = winreg.ConnectRegistry(None, winreg.HKEY_LOCAL_MACHINE)
+    aKey = winreg.OpenKey(aReg, r"SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\OUTLOOK.EXE")
+    n, v, t = winreg.EnumValue(aKey,0)
+    winreg.CloseKey(aKey)
+    winreg.CloseKey(aReg)
+    return v
 
 class NotesEntries(object):
     OPEN_RAW_RFC822_TEXT = ctypes.c_uint32(0x01000000)
@@ -280,6 +296,7 @@ class Gui(tkinter.Frame):
         self.dialog = None
         self.certificate = None
         self.hCryptoProv = None
+        self.EML2PST = None
 
         # Initialize the default values of the Radio buttons
         self.Format = tkinter.IntVar()
@@ -292,6 +309,8 @@ class Gui(tkinter.Frame):
         self.ErrorLevel.set(ErrorLevel.ERROR)
         self.Exceptions = tkinter.IntVar()
         self.Exceptions.set(Exceptions.EX_100)
+        self.Helper = tkinter.IntVar()
+        self.Helper.set(Helper.NO)
 
         # Lotus Password
         self.entryPassword = tkinter.Entry(self.master, relief=tkinter.GROOVE)
@@ -380,11 +399,11 @@ class Gui(tkinter.Frame):
             self.log(ErrorLevel.NORMAL, _("Connection to Notes established\n"))
         else:
             self.unchecked()
-            self.log(ErrorLevel.ERROR, _("Check the Notes password\n"))
+            self.log(ErrorLevel.ERROR, _("Check the Notes password and that NSF2X and Notes use the same architecture\n"))
         return self.checked
 
     def unchecked(self):
-        self.startButton.config(text=_("Open Sessions"))
+        self.startButton.config(text=_("Open Session"))
         self.checked = False
         self.configPasswordEntry()
 
@@ -538,10 +557,24 @@ class Gui(tkinter.Frame):
         R14 = tkinter.Radiobutton(self.dialog, text=_("Infinite"),
                                   variable=self.Exceptions, value=Exceptions.EX_INF)
         R14.grid(row=12, column=4, sticky=tkinter.W)
+        
+        ttk.Separator(self.dialog, orient=tkinter.HORIZONTAL).grid(row=13, columnspan=5,
+                                                                   sticky=tkinter.E+tkinter.W)
+
+        L5 = tkinter.Label(self.dialog, text=_("Always use external PST helper function :"))
+        L5.grid(row=14, column=1, columnspan=4, sticky=tkinter.W)
+
+        R15 = tkinter.Radiobutton(self.dialog, text=_("No"), variable=self.Helper,
+                                 value=Helper.NO)
+        R15.grid(row=15, column=1, columnspan=2, sticky=tkinter.W)
+
+        R16 = tkinter.Radiobutton(self.dialog, text=_("Yes"), variable=self.Helper,
+                                 value=Helper.YES)
+        R16.grid(row=15, column=3, columnspan=2, sticky=tkinter.W)   
 
         B1 = tkinter.Button(self.dialog, text=_("Close"), command=self.closeOptions,
                             relief=tkinter.GROOVE)
-        B1.grid(row=13, column=2, columnspan=2, sticky=tkinter.E+tkinter.W)
+        B1.grid(row=16, column=2, columnspan=2, sticky=tkinter.E+tkinter.W)
 
         self.dialog.focus_force()
 
@@ -586,6 +619,35 @@ class Gui(tkinter.Frame):
         if self.Format.get() == Format.MBOX  and self.MBOXType.get() == SubdirectoryMBOX.NO:
             self.log(ErrorLevel.WARN, _("The MBOX file will not have the directory hierarchies present in NSF file\n"))
 
+        if self.Format.get() == Format.PST:
+            # Check if we Outlook is 64bit, and adapt the importation
+            # strategy accoridngly. The MAPI interface must have the
+            # same bitness as the version of Outlook, so the EML2PST option
+            # forces a call an external helper program of the right bitness
+            # to do the importation. See
+            #    https://msdn.microsoft.com/en-us/library/office/dd941355.aspx?f=255&MSPPError=-2147217396
+            if platform.architecture()[0] == "32bit":
+                # NSF2X is running as a 32bit application
+                if platform.architecture(executable=OutlookPath())[0] != "32bit":
+                    # Need to use the 64bit helper function
+                    self.EML2PST = "helper64/eml2pst.exe"
+                    self.log(ErrorLevel.NORMAL, _("Detected 32bit NFS2X and 64bit Outlook"))
+                elif self.Helper.get() == Helper.YES:
+                    self.EML2PST = "helper32/eml2pst.exe"
+                    self.log(ErrorLevel.NORMAL, _("Forcing use of external helper function"))
+            else:
+                # NSF2X is running as a 64bit application
+                if platform.architecture(executable=OutlookPath())[0] == '32bit':
+                    # Need to use the 32bit helper function
+                    self.EML2PST = 'helper32/eml2pst.exe'
+                    self.log(ErrorLevel.NORMAL, _("Detected 64bit NFS2X and 32bit Outlook"))
+                elif self.Helper.get() == Helper.YES:
+                    self.EML2PST = "helper64/eml2pst.exe"
+                    self.log(ErrorLevel.NORMAL, _("Forcing use of external helper function"))
+
+            if self.EML2PST:
+                self.log(ErrorLevel.NORMAL, _("Using external helper function '%s' for importation of the EML files") % self.EML2PST)
+
         for src in os.listdir(self.nsfPath):
             if not self.running:
                 break
@@ -593,7 +655,7 @@ class Gui(tkinter.Frame):
             abssrc = os.path.join(self.nsfPath, src)
             if os.path.isfile(abssrc) and src.lower().endswith('.nsf'):
                 dest = src[:-4]
-                try:
+                try:                    
                     self.realConvert(src, dest)
                 except (pywintypes.com_error, OSError) as ex:
                     self.log(ErrorLevel.ERROR, _("Error converting database %s") % src)
@@ -622,6 +684,11 @@ class Gui(tkinter.Frame):
             nex = 100
         else:
             nex = -1
+            
+        if self.Format.get() == Format.PST and self.EML2PST:
+            ph = 3
+        else:
+            ph = 2
 
         path = os.path.join(self.nsfPath, src)
         self.log(ErrorLevel.NORMAL, _("Converting : %s ") % path)
@@ -666,8 +733,8 @@ class Gui(tkinter.Frame):
         for fld in dBNotes.Views:
             if  not (fld.Name == "($Sent)" or fld.IsFolder) or fld.EntryCount <= 0:
                 if fld.EntryCount > 0:
-                    tl.title(_("Lotus Notes Converter - Phase 1/2 Converting MIME (%.1f%%)") %
-                             float(10.*c/ac))
+                    tl.title(_("Lotus Notes Converter - Phase 1/%d Converting MIME (%.1f%%)") %
+                             (ph, float(10.*c/ac)))
                     self.update()
                 if not self.running:
                     return False
@@ -678,20 +745,25 @@ class Gui(tkinter.Frame):
                 if not self.running:
                     return False
 
+                subject = doc.GetFirstItem("Subject")
                 try:
                     if not self.ConvertToMIME(doc, _NotesEntries):
                         e += 1
                         self.log(ErrorLevel.ERROR, _("Can not convert message %d to MIME") % c)
+                        if subject:
+                            self.log(ErrorLevel.ERROR, _("#### Subject : %s") % subject.Text)
                 except (pywintypes.com_error, OSError) as ex:
                     e += 1
                     self.log(ErrorLevel.ERROR, _("Exception converting message %d to MIME : %s") %
                              (c, ex))
+                    if subject:
+                        self.log(ErrorLevel.ERROR, _("#### Subject : %s") % subject.Text)
 
                 doc = fld.GetNextDocument(doc)
                 c += 1
                 if (c % 20) == 0:
-                    tl.title(_("Lotus Notes Converter - Phase 1/2 Converting MIME (%.1f%%)") %
-                             float(10.*c/ac))
+                    tl.title(_("Lotus Notes Converter - Phase 1/%d Converting MIME (%.1f%%)") %
+                             (ph, float(10.*c/ac)))
                     self.update()
 
         if e == nex:
@@ -708,7 +780,7 @@ class Gui(tkinter.Frame):
             mbox = os.path.join(self.destPath, (dest + ".mbox"))
             self.log(ErrorLevel.NORMAL, _("Opening MBOX file - %s") % mbox)
             f = open(mbox, "wb")
-        elif self.Format.get() == Format.PST:
+        elif self.Format.get() == Format.PST and not self.EML2PST :
             pst = os.path.join(self.destPath, (dest + ".pst"))
 
             # Can't guarantee that MAPISVC.INF contains the service "MSPST MS" and so
@@ -737,22 +809,30 @@ class Gui(tkinter.Frame):
                 self.log(ErrorLevel.ERROR, _("Exception %s :") % ex)
                 raise
 
-        self.log(ErrorLevel.NORMAL, _("Starting importation of EML messages into mailbox"))
+        if self.Format.get() == Format.PST and self.EML2PST:
+            self.log(ErrorLevel.NORMAL, _("Starting exportation to temporary EML messages"))
+        else:
+            self.log(ErrorLevel.NORMAL, _("Starting importation of EML messages into mailbox"))
         ac = c # Update all message count
         c = 0
         e = 0
         for fld in dBNotes.Views:
             if  not (fld.Name == "($Sent)" or fld.IsFolder) or fld.EntryCount <= 0:
                 if fld.EntryCount > 0:
-                    tl.title(_("Lotus Notes Converter - Phase 2/2 Import Message %d of %d (%.1f%%)") % 
-                                (c, ac, float(10.*(ac + 9.*c)/ac)))
+                    if ph == 3:
+                        tl.title(_("Lotus Notes Converter - Phase 2/3 Export Message %d of %d (%.1f%%)") % 
+                                (c, ac, float(10.*(ac + 18.*c/ph)/ac)))
+                    else:
+                        tl.title(_("Lotus Notes Converter - Phase 2/2 Import Message %d of %d (%.1f%%)") % 
+                                (c, ac, float(10.*(ac + 18.*c/ph)/ac)))
                     self.update()
                 if not self.running:
                     return False
                 continue
 
             pstfld = None
-            if self.Format.get() == Format.EML:
+            if self.Format.get() == Format.EML or (self.Format.get() == Format.PST
+                                                   and self.EML2PST):
                 if fld.Name == "($Sent)":
                     path = os.path.join(self.destPath, dest, _("Sent"))
                 elif fld.Name == "($Inbox)":
@@ -767,7 +847,7 @@ class Gui(tkinter.Frame):
                     self.log(ErrorLevel.ERROR, _("Can not create directory %s") % path)
                     self.log(ErrorLevel.ERROR, "%s :" % ex)
                     continue
-            elif self.Format.get() == Format.PST:
+            elif self.Format.get() == Format.PST and not self.EML2PST :
                 if fld.Name == "($Sent)":
                     pstfld = MAPIrootFolder.CreateSubFolder(_("Sent"))
                 elif fld.Name == "($Inbox)":
@@ -841,7 +921,8 @@ class Gui(tkinter.Frame):
                             self.log(errlvl, _("Skipping as probably not a message"))
                     else:
                         if self.Format.get() != Format.MBOX:
-                            if self.Format.get() == Format.EML:
+                            if self.Format.get() == Format.EML or (self.Format.get() == Format.PST
+                                                                   and self.EML2PST):
                                 if fld.Name == "($Sent)":
                                     eml = os.path.join(self.destPath, dest, _("Sent"),
                                                        (str(d) + ".eml"))
@@ -855,13 +936,13 @@ class Gui(tkinter.Frame):
                                 # Need to treat as binary so that windows doesn't convert 
                                 # \n\r to \n\n\r
                                 f = open(eml, "wb")
-                            elif self.Format.get() == Format.PST:
+                            elif self.Format.get() == Format.PST and not self.EML2PST:
                                 (fd, eml) = tempfile.mkstemp(suffix=".eml")
                                 f = os.fdopen(fd, "wb")
 
                         if self.WriteMIMEOutput(f, doc):
                             d += 1
-                            if self.Format.get() == Format.PST:
+                            if self.Format.get() == Format.PST and not self.EML2PST:
                                 f.close()
                                 pstfld.ImportEML(eml)
 
@@ -869,7 +950,8 @@ class Gui(tkinter.Frame):
                                 if eml != None:
                                     os.remove(eml)
 
-                            elif self.Format.get() == Format.EML:
+                            elif self.Format.get() == Format.EML or (self.Format.get() == Format.PST
+                                                                     and self.EML2PST):
                                 f.close()
                         else:
                             raise NameError(_("Can not write Lotus MIME message to a file"))
@@ -902,12 +984,68 @@ class Gui(tkinter.Frame):
                         f.write(b"\n")
 
                     if (c % 20) == 0:
-                        tl.title(_("Lotus Notes Converter - Phase 2/2 Import Message %d of %d (%.1f%%)") % (c, ac, float(10.*(ac + 9.*c)/ac)))
+                        if ph == 3:
+                            tl.title(_("Lotus Notes Converter - Phase 2/3 Export Message %d of %d (%.1f%%)") % 
+                                    (c, ac, float(10.*(ac + 18.*c/ph)/ac)))
+                        else:                        
+                            tl.title(_("Lotus Notes Converter - Phase 2/2 Import Message %d of %d (%.1f%%)") % (c, ac, float(10.*(ac + 18.*c/ph)/ac)))
                         self.update()
 
             if self.Format.get() == Format.MBOX and self.MBOXType.get() == SubdirectoryMBOX.YES:
                 f.close()
 
+        # If need to call EML2PST helper function run Phase 3
+        if self.Format.get() == Format.PST and self.EML2PST:
+            self.log(ErrorLevel.NORMAL,_("Starting importation of EML files into PST file"))
+            process = subprocess.Popen([self.EML2PST,
+                                        os.path.join(self.destPath, dest), 
+                                        os.path.join(self.destPath, (dest + ".pst"))],
+                                       stdout=subprocess.PIPE,
+                                       stderr=subprocess.PIPE,
+                                       universal_newlines=True)
+            
+            terminating = False
+            while process.returncode is None:
+                if not terminating:    
+                    # handle output by direct access to stdout and stderr
+                    for line in process.stdout:
+                        if line.endswith('\n'):
+                            line = line[:-1]
+    
+                        # Interpret the stdout line, allowing for translated strings
+                        if line[:18] == "Importing message ":
+                            c = int(line[18:])
+                            tl.title(_("Lotus Notes Converter - Phase 3/3 Import Message %d of %d (%.1f%%)") % (c, ac, float(10.*(7*ac + 3.*c)/ac)))
+                            self.update()
+                        elif line[:23] == "Importing EML files in ":
+                            self.log(ErrorLevel.NORMAL, _("Importing EML files in %s") % line[23:])
+                        elif line[:19] == "Opening PST file - ":
+                            self.log(ErrorLevel.NORMAL, _("Importing EML files in %s") % line[19:])
+                        else:
+                            self.log(ErrorLevel.NORMAL, line)
+                            
+                        if not self.running:
+                            # Interrupt the importation process
+                            process.terminate()   
+                            terminating = True
+                    
+                # set returncode if the process has exited
+                process.poll()
+            
+            # Check if helper function quit with an error
+            if process.returncode:
+                if not terminating:
+                    self.log(ErrorLevel.ERROR, _("Helper process return the error code (%d)") % process.returncode)
+                for line in process.stderr:
+                    if line.endswith('\n'):
+                        line = line[:-1]
+                    self.log(ErrorLevel.ERROR, line)
+                self.log(ErrorLevel.ERROR, _("Importation of EML files into PST is incomplete"))
+
+            # Remove the EML files and the directory structure
+            self.log(ErrorLevel.NORMAL,_("Removing temporary EML files"))
+            shutil.rmtree(os.path.join(self.destPath, dest))
+                
         # Alert user if there were too many exceptions
         if e == nex:
             self.log(ErrorLevel.ERROR, _("Too many exceptions during mail importation. Stopping"))

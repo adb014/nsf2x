@@ -161,6 +161,11 @@ class mapifolder (mapiobject) :
         if not isinstance (flds, list) :
             flds = self._splitpath (flds)
 
+        
+        if flds == []:
+            # Return existing folder
+            return self.folder()
+            
         fld = flds[0]
         flds = flds[1:]
         subfolder = mapifolder(self.mapi, self.folder().CreateFolder(win32com.mapi.mapi.FOLDER_GENERIC, fld, None, None, win32com.mapi.mapi.OPEN_IF_EXISTS | win32com.mapi.mapi.MAPI_UNICODE)) 

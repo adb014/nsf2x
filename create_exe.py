@@ -24,6 +24,7 @@ import os
 import zipfile
 import sys
 import subprocess
+import platform
 
 class Target(object):
     '''Target is the baseclass for all executables that are created.
@@ -71,9 +72,9 @@ def which(program):
 
     return None
  
-def find_locale_files(locale):
+def find_all_files_in_dir(directory):
     ret = []
-    for root, dir, files in os.walk(locale) :
+    for root, dir, files in os.walk(directory) :
         _files = ()
         for file in files :
             _files += (os.path.join(root, file),)
@@ -82,10 +83,15 @@ def find_locale_files(locale):
     return ret
     
 def main () :
+    if platform.architecture()[0] == "32bit":
+        bitness = 'x86'
+    else :
+        bitness = 'amd64'
+        
     RT_BITMAP = 2
     RT_MANIFEST = 24
 
-    version = "1.2.17"
+    version = "1.3.0"
     author = "dbateman@free.fr"
     description="NSF2X - Converts Lotus NSF files to EML, MBOX or PST files..."
     
@@ -219,16 +225,19 @@ def main () :
           
           # data files to include
           data_files=[(".", ("README.txt", "LICENSE")), 
-                      ("src", ("create_exe.py", "nsf2x.py", "nsf2x.nsi", 
-                               "mapiex.py", "testmapiex.py", "README.dev"))] +
-                        find_locale_files('locale'),
+                      ("src", ("create_exe.py", "create_helper.py", "eml2pst.py",
+                               "nsf2x.py", "mapiex.py", "testmapiex.py",
+                               "nsf2x.nsi", "README.dev"))] +
+                        find_all_files_in_dir('locale') +
+                        find_all_files_in_dir('helper32') +
+                        find_all_files_in_dir('helper64'),
 
           # py2exe options
           zipfile=None,
           options={"py2exe": py2exe_options},
           )
     
-    zf = zipfile.ZipFile("nsf2x-" + version + ".zip", "w", zipfile.ZIP_DEFLATED)
+    zf = zipfile.ZipFile("nsf2x-" + version + "-" + bitness + ".zip", "w", zipfile.ZIP_DEFLATED)
     for root, dir, files in os.walk("dist") :
         for file in files :
             _file = os.path.join(root, file)
@@ -242,7 +251,8 @@ def main () :
         makensis=which("makensis.exe")
     if not makensis :
         raise "Can not find NSIS executable on your path"
-    subprocess.call([makensis, "-DVERSION=" + version, "-DPUBLISHER=" + author, "nsf2x.nsi"])
+    subprocess.call([makensis, "-DVERSION=" + version, "-DPUBLISHER=" + author,
+                     "-DBITNESS=" + bitness, "nsf2x.nsi"])
     
 if len(sys.argv) == 1:
     sys.argv.append("py2exe")

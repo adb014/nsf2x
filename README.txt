@@ -61,8 +61,11 @@ Details
    install for all users. A single user install, doesn't need elevated 
    privileges.
    
+   0.A Outlook Click to Run, AKA Office 365
+   ........................................
    Please note that if you have Outlook 2013 or 2016 installed in "Click to Run"
-   mode (aka "Office 365"), then NSF2X can not convert to PST files. You have 
+   mode (aka "Office 365"), then NSF2X can not convert to PST files without 
+   changes to the registry that could have other secondary effects. You have 
    several choices in this case
    
    A/ Upgrade your installation of Office to the "Open license full download" 
@@ -87,6 +90,15 @@ Details
    files will not be possible
    
    D/ Don't use NSF2X
+   
+   0.B 32bit or 64bit version
+   ..........................
+   NSF2X is supplied in both 32bit and 64bit versions. The version used should
+   match the bitness of the version of Lotus Notes that is used. In the case of
+   conversion to an Outlook PST file it is possible to have a version of Outlook
+   with a different bitness to Lotus Notes. In that case NSF2X will export the
+   mail to a set of temporary EML files and then call an external helper program
+   of the right bitness for Outlook to allow the conversion.   
    
    1. Make a copy of the *.nsf files you want to convert to a temporary location
   ------------------------------------------------------------------------------
@@ -238,6 +250,26 @@ Details
    
    Infinite : NSF2X will run until the end of the conversion regardless of the
    number of exceptions.
+   
+   Always use external PST helper function
+   .......................................
+   This options concerns conversion to PST format. The possible options are
+   
+   Yes : The mail will all be stored to a temporary location and an external
+   helper function will be called for the conversion of these EML files to
+   the PST format.
+   
+   If you repeatly get the message "File does not exist error (259)" repeatedly
+   from the MIMEConvertCDParts function, then this option can be used to avoid
+   it.
+   
+   The downside of this option is that additional disk space if needed to
+   store the temporary EML files.
+   
+   No : If Outlook is the same bitness as NSF2X, then NSF2X will convert 
+   directly to the PST format. Otherwise an external helper function will
+   be used.
+   
    
    9. Enter the source path of the temporary location with the "*.nsf" files
   --------------------------------------------------------------------------

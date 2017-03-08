@@ -18,7 +18,11 @@ Development
    python 2.7 but I'd recommend using at least 3.4
    
    Note that if your Notes client is 32bit as is mine you'll need to use the 32bit 
-   versions of python.
+   versions of python. However if your version of Outlook is a different bitness
+   you might need both the 32 and 64bit versions of python, and in that case the
+   steps below are duplicated for both versions. In that case you'll need to use
+   the Winpython control panel to unregister one version and register the other
+   when switching between versions
 
    2. Install pywin extensions for Windows from
    https://sourceforge.net/projects/pywin32/
@@ -47,8 +51,28 @@ Development
    
    Build
    -----
+   Open the Winpython control panel for the 32bit version
+         Hit the "register" button
+         SET PATH=%PATH%;c:\Python32
+         python create_exe.py
+         # The helper32 directory with the eml2pst application is built
+         
+   Reopen the Winpython control panel for the 32bit version
+         Hit the "unregister" button
+   
+   Open the Winpython control panel for the 64bit version
+         Hit the "register" button
+         SET PATH=%PATH%;c:\Python64
+         python create_exe.py 
+   
+   Reopen the Winpython control panel for the 64bit version
+         Hit the "unregister" button
+   
+   Open the Winpython control panel for the 32 or 64bit version
+         Hit the "register" button
+
    Open a console and run 
-         SET PATH=%PATH%;c:\Python
+         SET PATH=%PATH%;c:\PythonXX
          python create_exe.py
 
    The sub-directory 'dist' now contains the binary distribution, and the

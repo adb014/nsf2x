@@ -5,10 +5,13 @@
 !ifndef PUBLISHER
     !define PUBLISHER "root@localhost"
 !endif
-!define UNINSTKEY "${NAME}-${VERSION}"
+!ifndef BITNESS
+    !define BITNESS "x86"
+!endif
+!define UNINSTKEY "${NAME}-${VERSION}-${BITNESS}"
 
-!define DEFAULTNORMALDESTINATON "$ProgramFiles\${NAME}-${VERSION}"
-!define DEFAULTPORTABLEDESTINATON "$LocalAppdata\Programs\${NAME}-${VERSION}"
+!define DEFAULTNORMALDESTINATON "$ProgramFiles\${NAME}-${VERSION}-${BITNESS}"
+!define DEFAULTPORTABLEDESTINATON "$LocalAppdata\Programs\${NAME}-${VERSION}-${BITNESS}"
 
 !define CLSID_IConverterSession "{4E3A7680-B77A-11D0-9DA5-00C04FD65685}"
 !define CLSID_IMimeMessage "{9EADBD1A-447B-4240-A9DD-73FE7C53A981}"
@@ -21,7 +24,7 @@
 !define Office16ClickToRun "Software\Microsoft\Office\16.0\ClickToRun\Registry\MACHINE\Software\Classes"
 
 Name "${NAME}"
-Outfile "${NAME}-${VERSION}-setup.exe"
+Outfile "${NAME}-${VERSION}-${BITNESS}-setup.exe"
 RequestExecutionlevel highest
 SetCompressor LZMA
 
