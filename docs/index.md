@@ -1,5 +1,3 @@
-## NSF2X - A Lotus Notes NSF to EML, MBOX and Outlook PST converter
-
 Wriiten by David Bateman <dbateman@free.fr> based on [nlconverter](https://github.com/kdeldycke/nlconverter)
 by Hugues Bernard <hugues.bernard@gmail.com>
 
