@@ -4,7 +4,7 @@ by Hugues Bernard <hugues.bernard@gmail.com>
 NSF2X relies on the Windows COM interface to Lotus Notes for the conversion to EML and MBOX formats.
 For the PST format it relies on the COM interface to Outlook and the Windows MAPI API. For this reason
 NSF2X is a Windows only program and the user must have Lotus Notes installed, and optionally Outlook
-for the conversion to PST format.
+for the conversion to the PST format.
 
 NSF2X is licensed under the GPL v2 and the source code is available on 
 [https://github.com/adb014/nsf2x](https://github.com/adb014/nsf2x). The code is written in Python, but 
@@ -15,7 +15,7 @@ compiled versions are available for users that do not want to install Python.
 - Exports the mail from Lotus Notes NSF files in MIME format keeping all layout and attachments
 - Capable of reading the encrypted mails in the NSF files, removing the Lotus encryption and 
   reencrypting with the users Exchange Certificate in RC2, 3DES, AES128 or AES256 formats
-- Supports both Full and Click To Run (AKA Outlook 365) versions of Oulook
+- Supports both Full and Click To Run (AKA Office 365) versions of Oulook
 - Supports mixed 32 and 64 bit installations of Lotus Notes and Outlook
 - Multi-lingual, though only English and French translations currently exist.
 
@@ -30,5 +30,5 @@ versions of Notes select the 'x86' version and for 64bit versions select the 'am
 A complete user guide is available in the [README](https://github.com/adb014/nsf2x/blob/master/README.txt)
 file of NSF2X
 
-For people wanting the modify NSF2X, development notes of NSFX are available in the
+For people wanting to modify NSF2X, development notes of NSFX are available in the
 [README.dev](https://github.com/adb014/nsf2x/blob/master/README.dev) file
