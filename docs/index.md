@@ -15,8 +15,9 @@ compiled versions are available for users that do not want to install Python.
 ## Features of NSF2X
 - Exports from NSF files to EML, MBOX and PST formats
 - Exports the mail from Lotus Notes NSF files in MIME format keeping all layout and attachments
-- Capable of reading the encypted mails in the NSF files, removing the Lotus encryption and reencrpting with the users Exchange Certificate in RC2, 3DES, AES128 or AES256 formats
-- Supports both Full and Click To Run (AKA Outlook 365) versions
+- Capable of reading the encrypted mails in the NSF files, removing the Lotus encryption and 
+  reencrpting with the users Exchange Certificate in RC2, 3DES, AES128 or AES256 formats
+- Supports both Full and Click To Run (AKA Outlook 365) versions of Oulook
 - Supports mixed 32 and 64 bit installations of Lotus Notes and Outlook
 
 ## Downloading NSF2X
@@ -24,8 +25,11 @@ The latest versions of the installers are available from
 [https://github.com/adb014/nsf2x/releases/latest](https://github.com/adb014/nsf2x/releases/latest).
 
 You should select the version based on whether your version of Lotus Notes is 32 or 64 bit. For 32bit versions of 
-Notes select the 'x86' version and for 64bit versions select the 'amd64' version. 
+Notes select the 'x86' version and for 64bit versions select the 'amd64' version.
 
+## More Information
+A complete user guide is available in the [README](https://github.com/adb014/nsf2x/README.txt) file 
+of NSF2X
 
-
-
+For people wanting the modify NSF2X, development notes of NSFX are available in then
+[README.dev](https://github.com/adb014/nsf2x/README.dev) file
