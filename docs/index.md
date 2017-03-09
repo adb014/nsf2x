@@ -19,7 +19,7 @@ compiled versions are available for users that do not want to install Python.
   reencrypting with the users Exchange Certificate in RC2, 3DES, AES128 or AES256 formats
 - Supports both Full and Click To Run (AKA Outlook 365) versions of Oulook
 - Supports mixed 32 and 64 bit installations of Lotus Notes and Outlook
-- Multi-lingual, though only English and French translations current exist.
+- Multi-lingual, though only English and French translations currently exist.
 
 ## Downloading NSF2X
 The latest versions of the installers are available from 
