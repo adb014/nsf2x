@@ -1,7 +1,7 @@
 Wriiten by David Bateman <dbateman@free.fr> based on [nlconverter](https://github.com/kdeldycke/nlconverter)
 by Hugues Bernard <hugues.bernard@gmail.com>
 
-NSF2X relies on the windows COM interface to Lotus Notes for the conversion to EML and MBOX formats.
+NSF2X relies on the Windows COM interface to Lotus Notes for the conversion to EML and MBOX formats.
 For the PST format it relies on the COM interface to Outlook and the Windows MAPI API. For this reason
 NSF2X is a Windows only program and the user must have Lotus Notes installed, and optionally Outlook
 for the conversion to PST format.
