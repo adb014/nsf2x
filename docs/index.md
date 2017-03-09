@@ -28,8 +28,8 @@ You should select the version based on whether your version of Lotus Notes is 32
 Notes select the 'x86' version and for 64bit versions select the 'amd64' version.
 
 ## More Information
-A complete user guide is available in the [README](https://github.com/adb014/nsf2x/README.txt) file 
-of NSF2X
+A complete user guide is available in the [README](https://github.com/adb014/nsf2x/blob/master/README.txt)
+file of NSF2X
 
-For people wanting the modify NSF2X, development notes of NSFX are available in then
-[README.dev](https://github.com/adb014/nsf2x/README.dev) file
+For people wanting the modify NSF2X, development notes of NSFX are available in the
+[README.dev](https://github.com/adb014/nsf2x/blob/master/README.dev) file
