@@ -227,7 +227,7 @@ def main () :
           data_files=[(".", ("README.txt", "LICENSE")), 
                       ("src", ("create_exe.py", "create_helper.py", "eml2pst.py",
                                "nsf2x.py", "mapiex.py", "testmapiex.py",
-                               "nsf2x.nsi", "README.dev"))] +
+                               "nsf2x.nsi", "nsf2x_lang.nsi", "README.dev"))] +
                         find_all_files_in_dir('locale') +
                         find_all_files_in_dir('helper32') +
                         find_all_files_in_dir('helper64'),
