@@ -185,7 +185,7 @@ Details
 
    8. Modify the conversion options as wanted
   -------------------------------------------   
-   Using the "Options" button the user can modify four parameters of NSF2X.
+   Using the "Options" button the user can modify five parameters of NSF2X.
    The options that are be modified are discussed below
    
    Use different MBOXes for each sub-folder :
@@ -204,7 +204,9 @@ Details
    This option concerns all conversion types. The possible options are
    
    None : The encryption status of all Notes mails is ignored and all mail is 
-   saved without encryption
+   saved without encryption. This is useful if you can't export the user 
+   certificate from the Microsoft cryptographic store and therefore can't read
+   encrypted EML and MBOX mails with your mail client.
    
    RC2 40bit : Encrypt with the algorithm RC2-CBC with 40 bit. This algorithm
    is quite weak, but very portable. If you can avoid it you shouldn't use it

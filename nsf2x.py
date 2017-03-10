@@ -94,6 +94,8 @@ def OutlookPath () :
     return v
 
 class NotesEntries(object):
+    """A python wrapper to nnotes.dll to permit access to the ConvertMime"""
+    """that Lotus doesn't expose through the COM interface"""
     OPEN_RAW_RFC822_TEXT = ctypes.c_uint32(0x01000000)
     OPEN_RAW_MIME_PART = ctypes.c_uint32(0x02000000)
     OPEN_RAW_MIME	= ctypes.c_uint32(0x03000000) # OPEN_RAW_RFC822_TEXT | OPEN_RAW_MIME_PART
@@ -179,7 +181,8 @@ class NotesEntries(object):
         self.isLoaded(True, False)
 
         # Conversion UNICODE to LMBCS to allow Lotus to open databases with
-        # accents in their names
+        # accents in their names.
+        # OS_TRANSLATE_UTF8_TO_LMBCS = 24
         maxpath = 1024
         astr1 = path.encode('utf-8')
         astr2 = ctypes.create_string_buffer(maxpath)
@@ -277,7 +280,7 @@ class Gui(tkinter.Frame):
     """Basic Gui for NSF to EML, MBOX, PST export"""
     def __init__(self):
 
-        # Setup the Tk frame including the manner in will the row/columns are
+        # Setup the Tk frame including the manner in which the row/columns are
         # expanded. IE. Expand all columns equally, but only expand in height
         # the message area
         tkinter.Frame.__init__(self)
@@ -620,7 +623,7 @@ class Gui(tkinter.Frame):
             self.log(ErrorLevel.WARN, _("The MBOX file will not have the directory hierarchies present in NSF file\n"))
 
         if self.Format.get() == Format.PST:
-            # Check if we Outlook is 64bit, and adapt the importation
+            # Check if our Outlook is 64bit, and adapt the importation
             # strategy accoridngly. The MAPI interface must have the
             # same bitness as the version of Outlook, so the EML2PST option
             # forces a call an external helper program of the right bitness
@@ -821,10 +824,10 @@ class Gui(tkinter.Frame):
                 if fld.EntryCount > 0:
                     if ph == 3:
                         tl.title(_("Lotus Notes Converter - Phase 2/3 Export Message %d of %d (%.1f%%)") % 
-                                (c, ac, float(10.*(ac + 18.*c/ph)/ac)))
+                                (c, ac, float(10.*(ac + 6.*c)/ac)))
                     else:
                         tl.title(_("Lotus Notes Converter - Phase 2/2 Import Message %d of %d (%.1f%%)") % 
-                                (c, ac, float(10.*(ac + 18.*c/ph)/ac)))
+                                (c, ac, float(10.*(ac + 9.*c)/ac)))
                     self.update()
                 if not self.running:
                     return False
@@ -986,9 +989,9 @@ class Gui(tkinter.Frame):
                     if (c % 20) == 0:
                         if ph == 3:
                             tl.title(_("Lotus Notes Converter - Phase 2/3 Export Message %d of %d (%.1f%%)") % 
-                                    (c, ac, float(10.*(ac + 18.*c/ph)/ac)))
+                                    (c, ac, float(10.*(ac + 6.*c)/ac)))
                         else:                        
-                            tl.title(_("Lotus Notes Converter - Phase 2/2 Import Message %d of %d (%.1f%%)") % (c, ac, float(10.*(ac + 18.*c/ph)/ac)))
+                            tl.title(_("Lotus Notes Converter - Phase 2/2 Import Message %d of %d (%.1f%%)") % (c, ac, float(10.*(ac + 9.*c)/ac)))
                         self.update()
 
             if self.Format.get() == Format.MBOX and self.MBOXType.get() == SubdirectoryMBOX.YES:

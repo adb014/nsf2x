@@ -1,4 +1,4 @@
-!define NAME "nsf2x"
+﻿!define NAME "nsf2x"
 !ifndef VERSION
     !define VERSION "X.X.X"
 !endif
@@ -23,14 +23,14 @@
 !define Office15ClickToRun "Software\Microsoft\Office\15.0\ClickToRun\Registry\MACHINE\Software\Classes"
 !define Office16ClickToRun "Software\Microsoft\Office\16.0\ClickToRun\Registry\MACHINE\Software\Classes"
 
+; Keep NSIS v3.0 Happy
+Unicode true
+ManifestDPIAware true
+
 Name "${NAME}"
 Outfile "${NAME}-${VERSION}-${BITNESS}-setup.exe"
 RequestExecutionlevel highest
 SetCompressor LZMA
-
-; Keep NSIS v3.0 Happy
-Unicode true
-ManifestDPIAware true
 
 Var NormalDestDir
 Var LocalDestDir
@@ -50,8 +50,6 @@ Var i
 !include registry.nsh
 
 !insertmacro MUI_PAGE_WELCOME
-!define MUI_LICENSEPAGE_TEXT_BOTTOM "The source code for NSF2X is freely redistributable under the terms of the GNU General Public License (GPL) as published by the Free Software Foundation."
-!define MUI_LICENSEPAGE_BUTTON "Next >"
 !insertmacro MUI_PAGE_LICENSE "LICENSE"
 Page Custom OptionsPageCreate OptionsPageLeave
 !insertmacro MUI_PAGE_DIRECTORY
@@ -64,7 +62,7 @@ Page Custom OptionsPageCreate OptionsPageLeave
 !insertmacro MUI_UNPAGE_INSTFILES
 !insertmacro MUI_UNPAGE_FINISH
 
-!insertmacro MUI_LANGUAGE English
+!include "nsf2x_lang.nsi"
 
 Function .onInit
 StrCpy $NormalDestDir "${DEFAULTNORMALDESTINATON}"
@@ -75,11 +73,7 @@ ${GetParameters} $9
 ClearErrors
 ${GetOptions} $9 "/?" $8
 ${IfNot} ${Errors}
-    MessageBox MB_ICONINFORMATION|MB_SETFOREGROUND "\
-      /ALL : Extract application for all users$\n\
-      /SHORTCUT : Install desktop shortcut$\n\
-      /S : Silent install$\n\
-      /D=%directory% : Specify destination directory$\n"
+    MessageBox MB_ICONINFORMATION|MB_SETFOREGROUND "$(COMMANDLINE_HELP)"
     Quit
 ${EndIf}
 
@@ -154,34 +148,19 @@ ${If} $R0 != ""
 ${EndIf}
 
 ${If} $ClickToRun != ""
-    MessageBox MB_YESNOCANCEL|MB_TOPMOST|MB_ICONEXCLAMATION \
-    "You appear to have a $\"Click To Run$\" version of Outlook installed. This will interfere with \
-    the conversion to Outlook PST files. You have three choices$\r$\n\
-    $\r$\n\
-    1. Allow NSF2X to patch the registry. In this case the NSF2X installer must run with administrator \
-    privileges. This fix will also cause issues if you are running multiple versions of Outlook. \
-    After patching, your $\"Click To Run$\" Outlook client will work correctly, but older versions \
-    of Outlook might fail in unexplained manners. See$\r$\n\
-    $\r$\n\
-    https://blogs.msdn.microsoft.com/stephen_griffin/2014/04/21/outlook-2013-click-to-run-and-com-interfaces/$\r$\n\
-    $\r$\n\
-    for more information$\r$\n\
-    2. Continue the installation knowing that the conversion to PST will not be possible$\r$\n\
-    3. Cancel the installation of NSF2X$\r$\n\
-    $\r$\n\
-    Do you wish to let NSF2X patch the registry ?" IDYES Yes IDNO No
+    MessageBox MB_YESNOCANCEL|MB_TOPMOST|MB_ICONEXCLAMATION "$(HAVE_CLICKTORUN)" IDYES Yes IDNO No
     ; Only get here if the cancel button was pressed
     Quit
     
     Yes:
     ${registry::CopyKey} "HKLM\$ClickToRun\${CLSID_IConverterSession}" "HKLM\$ClickToRunDestination\${CLSID_IConverterSession}" $R0
     ${If} $R0 != 0
-        MessageBox MB_OK|MB_ICONEXCLAMATION "Failed to Copy $\"CLSID_IConverterSession$\" registry value. Aborting"
+        MessageBox MB_OK|MB_ICONEXCLAMATION "$(FAIL_COPY_ICONV)"
         Quit
     ${EndIf}
     ${registry::CopyKey} "HKLM\$ClickToRun\${CLSID_IMimeMessage}" "HKLM\$ClickToRunDestination\${CLSID_IMimeMessage}" $R0
     ${If} $R0 != 0
-        MessageBox MB_OK|MB_ICONEXCLAMATION "Failed to Copy $\"CLSID_IMimeMessage$\" registry value. Aborting"
+        MessageBox MB_OK|MB_ICONEXCLAMATION "$(FAIL_COPY_MIME)"
         Quit
     ${EndIf}
 
@@ -198,7 +177,7 @@ Function RequireAdmin
 UserInfo::GetAccountType
 Pop $8
 ${If} $8 != "admin"
-    MessageBox MB_ICONSTOP "You need administrator rights to install ${NAME}"
+    MessageBox MB_ICONSTOP "$(ADMIN_RIGHTS)"
     SetErrorLevel 740 ;ERROR_ELEVATION_REQUIRED
     Abort
 ${EndIf}
@@ -213,7 +192,7 @@ ${EndIf}
 FunctionEnd
 
 Function OptionsPageCreate
-!insertmacro MUI_HEADER_TEXT "Install Mode" "Choose how you want to install ${NAME}."
+!insertmacro MUI_HEADER_TEXT "$(INSTALL_MODE)" "$(INSTALL_CHOOSE)"
 
 Push $0
 nsDialogs::Create 1018
@@ -224,7 +203,7 @@ ${EndIf}
 
 Call SetModeDestinationFromInstdir ; If the user clicks BACK on the directory page we will remember their mode specific directory
 
-${NSD_CreateCheckBox} 0 0 100% 12u "Install for all users (requires administrator privileges)"
+${NSD_CreateCheckBox} 0 0 100% 12u "$(INSTALL_ADMIN)"
 Pop $InstallAllUsersCtrl
 
 UserInfo::GetAccountType
@@ -235,7 +214,7 @@ ${Else}
     ${NSD_SetState} $InstallAllUsersCtrl ${BST_CHECKED}
 ${EndIf}
 
-${NSD_CreateCheckBox} 0 20 100% 12u "Create desktop shortcut"
+${NSD_CreateCheckBox} 0 20 100% 12u "$(INSTALL_SHORTCUT)"
 Pop $InstallShortcutsCtrl
 ${NSD_SetState} $InstallShortcutsCtrl ${BST_CHECKED}
 
@@ -258,7 +237,7 @@ ${EndIf}
 ; Check to see if already installed
 ReadRegStr $R0 SHCTX "Software\Microsoft\Windows\CurrentVersion\Uninstall\${UNINSTKEY}" "UninstallString"
 ${If} $R0 != "" 
-    MessageBox MB_OKCANCEL|MB_TOPMOST "NSF2X version ${VERSION} is already installed. Launch the uninstaller?"  IDOK Ok IDCANCEL Cancel
+    MessageBox MB_OKCANCEL|MB_TOPMOST "$(ALREADY_INSTALLED)" IDOK Ok IDCANCEL Cancel
     Cancel:
     Quit
 
@@ -319,10 +298,7 @@ ${GetParameters} $9
 ClearErrors
 ${GetOptions} $9 "/?" $8
 ${IfNot} ${Errors}
-    MessageBox MB_ICONINFORMATION|MB_SETFOREGROUND "\
-      /ALL : remove application for all users$\n\
-      /USER : remove application for the current user$\n\
-      /S : Silent$\n"
+    MessageBox MB_ICONINFORMATION|MB_SETFOREGROUND "$(COMMANDLINE_HELP2)"
     Quit
 ${EndIf}
 
@@ -348,7 +324,7 @@ FunctionEnd
 Section "Uninstall"
 ReadRegStr $R0 SHCTX "Software\Microsoft\Windows\CurrentVersion\Uninstall\${UNINSTKEY}" "ClickToRun"
 ${If} $R0 != ""
-    MessageBox MB_YESNOCANCEL "Do you wish to let NSF2X remove the modifications it made to the registry to support $\"Click To Run$\" ?" IDYES Yes2 IDNO No2
+    MessageBox MB_YESNOCANCEL "$(UNINSTALL_REGISTRY)" IDYES Yes2 IDNO No2
     Quit
     Yes2:
     ReadRegStr $R1 SHCTX "Software\Microsoft\Windows\CurrentVersion\Uninstall\${UNINSTKEY}" "ClickToRunDestination"
