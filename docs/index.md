@@ -1,4 +1,4 @@
-Wriiten by David Bateman <dbateman@free.fr> based on [nlconverter](https://github.com/kdeldycke/nlconverter)
+Written by David Bateman <dbateman@free.fr> based on [nlconverter](https://github.com/kdeldycke/nlconverter)
 by Hugues Bernard <hugues.bernard@gmail.com>
 
 NSF2X relies on the Windows COM interface to Lotus Notes for the conversion to EML and MBOX formats.
