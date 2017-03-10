@@ -1000,12 +1000,17 @@ class Gui(tkinter.Frame):
         # If need to call EML2PST helper function run Phase 3
         if self.Format.get() == Format.PST and self.EML2PST:
             self.log(ErrorLevel.NORMAL,_("Starting importation of EML files into PST file"))
+            # Force Popen to not create a CMD windows. Don't use "Shell=True" as although
+            # not a security risk here (the user of NSF2X already has console access), but 
+            # its use is discouraged.
+            CREATE_NO_WINDOW = 0x08000000
             process = subprocess.Popen([self.EML2PST,
                                         os.path.join(self.destPath, dest), 
                                         os.path.join(self.destPath, (dest + ".pst"))],
                                        stdout=subprocess.PIPE,
                                        stderr=subprocess.PIPE,
-                                       universal_newlines=True)
+                                       universal_newlines=True,
+                                       creationflags=CREATE_NO_WINDOW)
             
             terminating = False
             while process.returncode is None:
