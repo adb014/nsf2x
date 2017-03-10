@@ -17,6 +17,7 @@ compiled versions are available for users that do not want to install Python.
   reencrypting with the users Exchange Certificate in RC2, 3DES, AES128 or AES256 formats
 - Supports both Full and Click To Run (AKA Office 365) versions of Oulook
 - Supports mixed 32 and 64 bit installations of Lotus Notes and Outlook
+- Supports unicode filenames (ie. Accents in the NSF and PST filenames)
 - Multi-lingual, though only English and French translations currently exist.
 
 ## Downloading NSF2X
@@ -30,5 +31,5 @@ versions of Notes select the 'x86' version and for 64bit versions select the 'am
 A complete user guide is available in the [README](https://github.com/adb014/nsf2x/blob/master/README.txt)
 file of NSF2X
 
-For people wanting to modify NSF2X, development notes of NSFX are available in the
+For people wanting to modify NSF2X, development notes of NSF2X are available in the
 [README.dev](https://github.com/adb014/nsf2x/blob/master/README.dev) file
