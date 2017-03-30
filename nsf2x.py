@@ -1098,11 +1098,11 @@ class Gui(tkinter.Frame):
                 # The C API identifies some unencrypted mail as "Sealed". These don't need
                 # to be unencrypted to allow conversion to MIME.
                 enc = doc.GetFirstItem("Encrypt")
-                if enc != None and enc.Text == '1' :
+                if enc != None and enc.Text == '1':
                     # if the note is encrypted, try to decrypt it. If that fails
                     #(e.g., we don't have the key), then we can't convert to MIME
                     # (we don't care about the signature)
-                    stat, isSigned, isSealed = _NotesEntries.NSFNoteIsSignedOrSealed(hNote)
+                    isSignedSealed, isSigned, isSealed = _NotesEntries.NSFNoteIsSignedOrSealed(hNote)
                     if isSealed:
                         self.log(ErrorLevel.INFO, _("Document note id 0x%s is encrypted.") %
                                  doc.NoteID)
@@ -1276,7 +1276,7 @@ class Gui(tkinter.Frame):
                     self.WriteMIMEChildren(f_mime, mime, True)
                 else:
                     enc = doc.GetFirstItem("Encrypt")
-                    if enc != None and enc.Text == '1' : 
+                    if enc != None and enc.Text == '1': 
                         # See https://msdn.microsoft.com/en-us/library/windows/desktop/aa382376(v=vs.85).aspx
                         # Note that the PROV_RSA_AES provider supplies RC2, RC4 and
                         # AES encryption whereas as the PROV_RSA_FULL provider only
