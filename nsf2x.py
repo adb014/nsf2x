@@ -464,13 +464,6 @@ class Gui(tkinter.Frame):
             else:
                 self.destPath = '.'
 
-        # TOBERM
-        # This code is just to make my life while testing easier. Remove it eventually
-        op = "C:\\Users\\C07056\\Documents\\temp"
-        if os.path.exists(op):
-            self.nsfPath = op
-            self.destPath = op
-
         self.chooseNsfButton.config(text=_("Source directory is : %s") % self.nsfPath)
         self.chooseNsfButton.config(state=tkinter.NORMAL)
         self.chooseDestButton.config(text=_("Destination directory is %s") % self.destPath)
@@ -890,6 +883,13 @@ class Gui(tkinter.Frame):
 
                 try:
                     eml = None
+                    
+                    if doc.GetFirstItem("Body") == None and doc.GetFirstItem("Body") == None:
+                        # This allows the export of message that contain no
+                        # body, as the subject, date and recipients contain
+                        # useful information
+                        self.log(ErrorLevel.INFO, _("Creating Body in message %d") % c)
+                        doc.CreateMIMEEntity()
 
                     if doc.GetMIMEEntity("Body") == None:
                         subject = doc.GetFirstItem("Subject")
@@ -906,6 +906,7 @@ class Gui(tkinter.Frame):
                         else:
                             body = doc.GetFirstItem("Body")
                             if not body or body.ValueLength <= 0:
+                                # This shouldn't be possible after creation of body above 
                                 errlvl = ErrorLevel.WARN
                                 empty = True
                             else:
@@ -1097,7 +1098,7 @@ class Gui(tkinter.Frame):
                 # The C API identifies some unencrypted mail as "Sealed". These don't need
                 # to be unencrypted to allow conversion to MIME.
                 enc = doc.GetFirstItem("Encrypt")
-                if enc != None and enc.Text == '1':
+                if enc != None and enc.Text == '1' :
                     # if the note is encrypted, try to decrypt it. If that fails
                     #(e.g., we don't have the key), then we can't convert to MIME
                     # (we don't care about the signature)
@@ -1107,13 +1108,13 @@ class Gui(tkinter.Frame):
                                  doc.NoteID)
                         DECRYPT_ATTACHMENTS_IN_PLACE = ctypes.c_uint16(1)
                         stat = _NotesEntries.NSFNoteDecrypt(hNote, DECRYPT_ATTACHMENTS_IN_PLACE)
+                        
+                        if stat != 0:
+                            self.log(ErrorLevel.ERROR, _("Document note id 0x%s is encrypted, cannot be converted.") % doc.NoteID)
+                                                                                    
                     if isSigned:
                         self.log(ErrorLevel.INFO, _("Document note id 0x%s is signed") %
                                  doc.NoteID)
-
-                        if stat != 0:
-                            self.log(ErrorLevel.ERROR, _("Document note id 0x%s is encrypted, cannot be converted.") % doc.NoteID)
-
                 if stat == 0:
                     # if the note is already in mime format, we don't have to convert
                     if not _NotesEntries.NSFNoteHasMIMEPart(hNote):
@@ -1275,7 +1276,7 @@ class Gui(tkinter.Frame):
                     self.WriteMIMEChildren(f_mime, mime, True)
                 else:
                     enc = doc.GetFirstItem("Encrypt")
-                    if enc != None and enc.Text == '1':
+                    if enc != None and enc.Text == '1' : 
                         # See https://msdn.microsoft.com/en-us/library/windows/desktop/aa382376(v=vs.85).aspx
                         # Note that the PROV_RSA_AES provider supplies RC2, RC4 and
                         # AES encryption whereas as the PROV_RSA_FULL provider only

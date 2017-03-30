@@ -82,5 +82,5 @@ LangString 	COMMANDLINE_HELP2		${LANG_French}	"\
       /USER : Supprimer l'application pour l'utilisateur courant$\n\
       /S : Silencieuse$\n"
 
-LangString 	UNINSTALL_REGISTRY	${LANG_English}	"Do you wish to let NSF2X remove the modifications it made to the registry to support $\"Click To Run$\" ?"
-LangString 	UNINSTALL_REGISTRY	${LANG_French}	"Est-ce que vous voulez laisser NSF2X supprimer les modifications qu’il a fait au registre afin de $\"Click To Run$\" ?"
+LangString 	UNINSTALL_REGISTRY	${LANG_English}	"Do you wish to let ${NAME} remove the modifications it made to the registry to support $\"Click To Run$\" ?"
+LangString 	UNINSTALL_REGISTRY	${LANG_French}	"Est-ce que vous voulez laisser ${NAME} supprimer les modifications qu’il a fait au registre afin de supporter $\"Click To Run$\" ?"
