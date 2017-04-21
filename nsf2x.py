@@ -17,8 +17,20 @@
 # Copyright (C) 2016 Free Software Foundation
 # Author : David Bateman <dbateman@free.fr>
 
+"""NSF2X : A Python/Tkinter application for Lotus Lotus NSF to MBOX,
+EML and PST converter
+"""
+
 # Very loosely based on nlconverter (https://code.google.com/p/nlconverter/)
 # by Hugues Bernard <hugues.bernard@gmail.com>
+
+# Place the PyLint warning to disable globally in this file here
+
+# Ignore variable/function/Method naming conventions of PEP8. I like my names
+# pylint: disable=C0103
+
+# Ignore line length conventions (lines less than 100 characters)
+# pylint: disable=C0301
 
 import gettext
 import locale
@@ -29,15 +41,15 @@ import codecs
 import os
 import sys
 import io
-import ctypes
-import win32com.client #NB : Calls to COM are starting with an uppercase
+import platform
+import subprocess
+import shutil
 import pywintypes
 import win32crypt
 import win32cryptcon
 import winreg
-import platform
-import subprocess
-import shutil
+import win32com.client #NB : Calls to COM are starting with an uppercase
+import ctypes
 
 try:
     # Python 3.x
@@ -57,7 +69,7 @@ notesDllPathList = [r'c:/notes', r'd:/notes', r'c:/program files/notes', r'd:/pr
                     r'c:/program files (x86)/ibm/notes', r'd:/program files (x86)/ibm/notes']
 
 # Setup i8n. This has to stay here rather than at the end of the file so that
-# "_" is defined 
+# "_" is defined
 lang = locale.windows_locale.get(ctypes.windll.kernel32.GetUserDefaultLCID())
 localedir = os.path.join(os.path.abspath(os.path.dirname(sys.argv[0])), 'locale')
 translate = gettext.translation('nsf2x', localedir, languages=[lang], fallback=True)
@@ -66,36 +78,42 @@ translate.install()
 
 # The following classes are a means of creating a simple ENUM functionality
 # Use list(range()) for Python 2.7 and 3.x compatibility
-class Format:
+class Format: # pylint: disable=R0903
+    """Enum for format to write to"""
     EML, MBOX, PST = list(range(3))
 
-class EncryptionType:
+class EncryptionType: # pylint: disable=R0903
+    """Enum for re-encryption type"""
     NONE, RC2CBC, DES, AES128, AES256 = list(range(5))
 
-class SubdirectoryMBOX:
+class SubdirectoryMBOX: # pylint: disable=R0903
+    """Enum for the treatment of subfolder for the MBOX format"""
     NO, YES = list(range(2))
 
-class ErrorLevel:
+class ErrorLevel: # pylint: disable=R0903
+    """Enum for the error reporting level"""
     NORMAL, ERROR, WARN, INFO = list(range(4))
 
-class Exceptions:
+class Exceptions: # pylint: disable=R0903
+    """Enum for the number of exceptions allowed before quitting"""
     EX_1, EX_10, EX_100, EX_INF = list(range(4))
-    
-# FIXME: Should this enum be combined with SubdirectoryMBOX ?
-class Helper:
+
+class Helper: # pylint: disable=R0903
+    """Enum to flag whether the use of an external PST import is to be forced"""
     NO, YES = list(range(2))
-    
-def OutlookPath () :
+
+def OutlookPath():
+    """Function to retrieve the path to Outlook from the registry"""
     aReg = winreg.ConnectRegistry(None, winreg.HKEY_LOCAL_MACHINE)
     aKey = winreg.OpenKey(aReg, r"SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\OUTLOOK.EXE")
-    n, v, t = winreg.EnumValue(aKey,0)
+    # prepend unused variables with "dummy_" to keep PyLint happy
+    dummy_n, v, dummy_t = winreg.EnumValue(aKey, 0)
     winreg.CloseKey(aKey)
     winreg.CloseKey(aReg)
     return v
 
 class NotesEntries(object):
-    """A python wrapper to nnotes.dll to permit access to the ConvertMime"""
-    """that Lotus doesn't expose through the COM interface"""
+    """Wrapper to nnotes.dll for access to ConvertMime not exposed through COM interface"""
     OPEN_RAW_RFC822_TEXT = ctypes.c_uint32(0x01000000)
     OPEN_RAW_MIME_PART = ctypes.c_uint32(0x02000000)
     OPEN_RAW_MIME	= ctypes.c_uint32(0x03000000) # OPEN_RAW_RFC822_TEXT | OPEN_RAW_MIME_PART
@@ -103,20 +121,20 @@ class NotesEntries(object):
     hDb = ctypes.c_void_p(0)
 
     def __init__(self, fp=None):
-        self.loaddll(fp)
-        self.isLoaded(True, False)
-        self.SetDLLReturnTypes()
+        """NoteEntries initialisation method"""
+        self.__loaddll(fp)
+        self.__isLoaded(True, False) # Throw an error if the DLL didn't load
+        self.__SetDLLReturnTypes()
         stat = self.nnotesdll.NotesInitExtended(0, ctypes.c_void_p(0))
         if stat != 0:
             raise NameError(_("NNOTES DLL can not be initialized (ErrorID %d)") % stat)
 
-        # Throw an error if the DLL didn't load
-        self.isLoaded(True, False)
-
     def __delete__(self, instance):
-        self.NotesTerm()
+        """"NotesEntries destructor"""
+        self.__isLoaded(True, False)
+        self.nnotesdll.NotesTerm()
 
-    def loaddll(self, fp=None):
+    def __loaddll(self, fp=None):
         if fp != None:
             if os.path.exists(fp):
                 self.nnotesdll = ctypes.WinDLL(fp)
@@ -137,16 +155,16 @@ class NotesEntries(object):
                         self.nnotesdll = ctypes.WinDLL(fp)
                         break
 
-    def isLoaded(self, raiseError=True, TestDb=True):
+    def __isLoaded(self, raiseError=True, TestDb=True):
         if raiseError:
-            if self.nnotesdll == None:
+            if self.nnotesdll is None:
                 raise NameError(_("NNOTES DLL not loaded"))
-            elif TestDb and self.hDb == None:
+            elif TestDb and self.hDb is None:
                 raise NameError(_("NNOTES DLL : Database not loaded"))
         else:
             return self.nnotesdll != None and self.hDb != None
 
-    def SetDLLReturnTypes(self):
+    def __SetDLLReturnTypes(self):
         self.nnotesdll.NotesInitExtended.restype = ctypes.c_uint16
         self.nnotesdll.NotesTerm.restype = ctypes.c_uint16
         self.nnotesdll.NSFDbOpen.restype = ctypes.c_uint16
@@ -169,16 +187,8 @@ class NotesEntries(object):
         self.nnotesdll.MIMEConvertMIMEPartCC.restype = ctypes.c_uint16
         self.nnotesdll.NSFNoteUpdate.restype = ctypes.c_uint16
 
-    def NotesInitExtended(self, argc, argv):
-        self.isLoaded(True, False)
-        return self.nnotesdll.NotesInitExtended(argc, argv)
-
-    def NotesTerm(self):
-        self.isLoaded(True, False)
-        return self.nnotesdll.NotesTerm()
-
     def NSFDbOpen(self, path):
-        self.isLoaded(True, False)
+        self.__isLoaded(True, False)
 
         # Conversion UNICODE to LMBCS to allow Lotus to open databases with
         # accents in their names.
@@ -191,39 +201,39 @@ class NotesEntries(object):
         return self.nnotesdll.NSFDbOpen(ctypes.c_char_p(astr2.value), ctypes.byref(self.hDb))
 
     def NSFDbClose(self):
-        self.isLoaded()
+        self.__isLoaded()
         return self.nnotesdll.NSFDbClose(self.hDb)
 
     def NSFNoteCopy(self, hNote):
-        self.isLoaded()
+        self.__isLoaded()
         hNoteNew = ctypes.c_void_p(0)
         retval = self.nnotesdll.NSFDbClose(hNote, ctypes.byref(hNoteNew))
         return retval, hNoteNew
 
     def NSFNoteOpenExt(self, nid, flags):
-        self.isLoaded()
+        self.__isLoaded()
         hNote = ctypes.c_void_p(0)
         retval = self.nnotesdll.NSFNoteOpenExt(self.hDb, nid, flags, ctypes.byref(hNote))
         return retval, hNote
 
     def NSFNoteOpenByUNID(self, unid, flags):
-        self.isLoaded()
+        self.__isLoaded()
         hNote = ctypes.c_void_p(0)
         retval = self.nnotesdll.NSFNoteOpenByUNID(self.hDb, unid, flags, ctypes.byref(hNote))
         return retval, hNote
 
     def NSFNoteClose(self, hNote):
-        self.isLoaded()
+        self.__isLoaded()
         return self.nnotesdll.NSFNoteClose(hNote)
 
     def NSFNoteGetInfo(self, hNote, flags):
-        self.isLoaded()
+        self.__isLoaded()
         retval = ctypes.c_uint16(0)
         self.nnotesdll.NSFNoteGetInfo(hNote, flags, ctypes.byref(retval))
         return retval
 
     def NSFNoteIsSignedOrSealed(self, hNote):
-        self.isLoaded()
+        self.__isLoaded()
         isSigned = ctypes.c_bool(False)
         isSealed = ctypes.c_bool(False)
         retval = self.nnotesdll.NSFNoteIsSignedOrSealed(hNote, ctypes.byref(isSigned),
@@ -231,54 +241,55 @@ class NotesEntries(object):
         return retval, isSigned.value, isSealed.value
 
     def NSFNoteDecrypt(self, hNote, flags):
-        self.isLoaded()
+        self.__isLoaded()
         return self.nnotesdll.NSFNoteDecrypt(hNote, flags, ctypes.c_void_p(0))
 
     def NSFItemDelete(self, hNote, iname):
-        self.isLoaded()
+        self.__isLoaded()
         return self.nnotesdll.NSFItemDelete(hNote, iname, len(iname))
 
     def NSFNoteHasMIMEPart(self, hNote):
-        self.isLoaded()
+        self.__isLoaded()
         return self.nnotesdll.NSFNoteHasMIMEPart(hNote)
 
     def NSFNoteHasMIME(self, hNote):
-        self.isLoaded()
+        self.__isLoaded()
         return self.nnotesdll.NSFNoteHasMIME(hNote)
 
     def NSFNoteHasComposite(self, hNote):
-        self.isLoaded()
+        self.__isLoaded()
         return self.nnotesdll.NSFNoteHasComposite(hNote)
 
     def MMCreateConvControls(self):
-        self.isLoaded()
+        self.__isLoaded()
         hCC = ctypes.c_void_p(0)
         stat = self.nnotesdll.MMCreateConvControls(ctypes.byref(hCC))
         return(stat, hCC)
 
     def MMDestroyConvControls(self, hCC):
-        self.isLoaded()
+        self.__isLoaded()
         return self.nnotesdll.MMDestroyConvControls(hCC)
 
     def MMSetMessageContentEncoding(self, hCC, flags):
-        self.isLoaded()
+        self.__isLoaded()
         self.nnotesdll.MMSetMessageContentEncoding(hCC, flags)
 
     def MIMEConvertCDParts(self, hNote, bcanon, bisMime, hCC):
-        self.isLoaded()
+        self.__isLoaded()
         return self.nnotesdll.MIMEConvertCDParts(hNote, bcanon, bisMime, hCC)
 
     def MIMEConvertMIMEPartsCC(self, hNote, bcanon, hCC):
-        self.isLoaded()
+        self.__isLoaded()
         return self.nnotesdll.MIMEConvertCDParts(hNote, bcanon, hCC)
 
     def NSFNoteUpdate(self, hNote, flags):
-        self.isLoaded()
+        self.__isLoaded()
         return self.nnotesdll.NSFNoteUpdate(hNote, flags)
 
 class Gui(tkinter.Frame):
     """Basic Gui for NSF to EML, MBOX, PST export"""
     def __init__(self):
+        """Gui init function"""
 
         # Setup the Tk frame including the manner in which the row/columns are
         # expanded. IE. Expand all columns equally, but only expand in height
@@ -376,6 +387,7 @@ class Gui(tkinter.Frame):
         self.log(ErrorLevel.NORMAL, _("Contact dbateman@free.fr for more information.\n"))
 
     def openSource(self):
+        """Gui Open Source Action Callback"""
         dirname = self.tk.call('tk_chooseDirectory', '-initialdir', self.nsfPath,
                                '-mustexist', True)
         if dirname != "":
@@ -383,6 +395,7 @@ class Gui(tkinter.Frame):
             self.chooseNsfButton.config(text=_("Source directory is : %s") % self.nsfPath)
 
     def openDestination(self):
+        """Gui Open Destinaion Action Callback"""
         dirname = self.tk.call('tk_chooseDirectory', '-initialdir',
                                self.destPath, '-mustexist', True)
         if dirname != "" and type(dirname) is not tuple and str(dirname) != "":
@@ -397,6 +410,7 @@ class Gui(tkinter.Frame):
         self.unchecked()
 
     def check(self):
+        """Method to chack that Lotus Notes COM interface is loaded"""
         if self.Lotus != None:
             self.checked = True
             self.log(ErrorLevel.NORMAL, _("Connection to Notes established\n"))
@@ -406,11 +420,13 @@ class Gui(tkinter.Frame):
         return self.checked
 
     def unchecked(self):
+        """Method to reinitialise NSF2X startup state"""
         self.startButton.config(text=_("Open Session"))
         self.checked = False
         self.configPasswordEntry()
 
     def configStop(self, AllowButton=True, ActionText=_("Stop")):
+        """Gui Stop Button Configuration"""
         self.chooseNsfButton.config(state=tkinter.DISABLED)
         self.chooseDestButton.config(state=tkinter.DISABLED)
         self.entryPassword.config(state=tkinter.DISABLED)
@@ -424,6 +440,7 @@ class Gui(tkinter.Frame):
         self.formatTypePST.config(state=tkinter.DISABLED)
 
     def configPasswordEntry(self):
+        """Gui Password Entry Configuration"""
         self.startButton.config(text=_("Open Sessions"), state=tkinter.NORMAL)
         self.chooseNsfButton.config(text=_("Select Directory of SOURCE nsf files"),
                                     state=tkinter.DISABLED)
@@ -436,6 +453,7 @@ class Gui(tkinter.Frame):
         self.optionsButton.config(state=tkinter.DISABLED)
 
     def configDirectoryEntry(self, SetDefaultPath=True):
+        """Gui Directory Entry Configuration"""
         self.startButton.config(text=_("Convert"), state=tkinter.NORMAL)
         self.entryPassword.config(state=tkinter.DISABLED)
         self.formatTypeEML.config(state=tkinter.NORMAL)
@@ -447,7 +465,7 @@ class Gui(tkinter.Frame):
             op = None
             try:
                 op = os.path.join(os.path.dirname(self.Lotus.URLDatabase.FilePath), 'archive')
-            except (pywintypes.com_error, OSError):
+            except (pywintypes.com_error, OSError): # pylint: disable=E1101
                 try:
                     op = os.path.join(os.path.expanduser('~'), 'archive')
                 except OSError:
@@ -470,6 +488,7 @@ class Gui(tkinter.Frame):
         self.chooseDestButton.config(state=tkinter.NORMAL)
 
     def doOptions(self):
+        """Gui Options Action Callback"""
         self.configStop(False, _("Convert"))
 
         self.dialog = tkinter.Toplevel(master=self.winfo_toplevel())
@@ -553,7 +572,7 @@ class Gui(tkinter.Frame):
         R14 = tkinter.Radiobutton(self.dialog, text=_("Infinite"),
                                   variable=self.Exceptions, value=Exceptions.EX_INF)
         R14.grid(row=12, column=4, sticky=tkinter.W)
-        
+
         ttk.Separator(self.dialog, orient=tkinter.HORIZONTAL).grid(row=13, columnspan=5,
                                                                    sticky=tkinter.E+tkinter.W)
 
@@ -561,12 +580,12 @@ class Gui(tkinter.Frame):
         L5.grid(row=14, column=1, columnspan=4, sticky=tkinter.W)
 
         R15 = tkinter.Radiobutton(self.dialog, text=_("No"), variable=self.Helper,
-                                 value=Helper.NO)
+                                  value=Helper.NO)
         R15.grid(row=15, column=1, columnspan=2, sticky=tkinter.W)
 
         R16 = tkinter.Radiobutton(self.dialog, text=_("Yes"), variable=self.Helper,
-                                 value=Helper.YES)
-        R16.grid(row=15, column=3, columnspan=2, sticky=tkinter.W)   
+                                  value=Helper.YES)
+        R16.grid(row=15, column=3, columnspan=2, sticky=tkinter.W)
 
         B1 = tkinter.Button(self.dialog, text=_("Close"), command=self.closeOptions,
                             relief=tkinter.GROOVE)
@@ -575,11 +594,13 @@ class Gui(tkinter.Frame):
         self.dialog.focus_force()
 
     def closeOptions(self):
+        """GUI Close Options action callback"""
         self.configDirectoryEntry(False)
         if self.dialog != None:
             self.dialog.destroy()
 
     def doConvert(self):
+        """GUI Convert action callback"""
         if self.checked:
             if self.running:
                 self.running = False
@@ -595,14 +616,16 @@ class Gui(tkinter.Frame):
                 # Use rstrip to remove trailing whitespace as not part of the password
                 self.Lotus.Initialize(self.entryPassword.get().rstrip())
                 self.Lotus.ConvertMime = False
-            except pywintypes.com_error as ex:
+            except pywintypes.com_error as ex: # pylint: disable=E1101
                 self.log(ErrorLevel.ERROR, _("Error connecting to Lotus !"))
                 self.log(ErrorLevel.ERROR, _("Exception %s :") % ex)
-                # Try to force loading of Notes
-                for p in notesDllPathList:
-                    fp = os.path.join(p, 'nlsxbe.dll')
-                    if os.path.exists(fp) and os.system('regsvr32 /s "%s"' % fp) == 0:
-                        break
+                # Try to force loading of Notes, but only do it if the COM
+                # interface wasn't found.
+                if self.Lotus is None:
+                    for p in notesDllPathList:
+                        fp = os.path.join(p, 'nlsxbe.dll')
+                        if os.path.exists(fp) and os.system('regsvr32 /s "%s"' % fp) == 0:
+                            break
                 self.Lotus = None
 
             self.check()
@@ -610,6 +633,7 @@ class Gui(tkinter.Frame):
                 self.configDirectoryEntry()
 
     def doConvertDirectory(self):
+        """Method to convert all NSF files in a directory"""
         tl = self.winfo_toplevel()
         self.log(ErrorLevel.NORMAL, _("Starting Convert : %s\n") % datetime.datetime.now())
         if self.Format.get() == Format.MBOX  and self.MBOXType.get() == SubdirectoryMBOX.NO:
@@ -651,9 +675,9 @@ class Gui(tkinter.Frame):
             abssrc = os.path.join(self.nsfPath, src)
             if os.path.isfile(abssrc) and src.lower().endswith('.nsf'):
                 dest = src[:-4]
-                try:                    
+                try:
                     self.realConvert(src, dest)
-                except (pywintypes.com_error, OSError) as ex:
+                except (pywintypes.com_error, OSError) as ex: # pylint: disable=E1101
                     self.log(ErrorLevel.ERROR, _("Error converting database %s") % src)
                     self.log(ErrorLevel.ERROR, _("Exception %s :") % ex)
                     self.log(ErrorLevel.ERROR, "%s" % traceback.format_exc())
@@ -665,7 +689,7 @@ class Gui(tkinter.Frame):
         self.configDirectoryEntry(False)
 
     def realConvert(self, src, dest):
-        """Perform the translation from nsf to X"""
+        """Method to perform the translation from NSF to X on a single file"""
         c = 0 #document counter
         e = 0 #exception counter
         ac = 0 # all message count, though only an upper bounds as some documents not in folders
@@ -680,7 +704,7 @@ class Gui(tkinter.Frame):
             nex = 100
         else:
             nex = -1
-            
+
         if self.Format.get() == Format.PST and self.EML2PST:
             ph = 3
         else:
@@ -693,7 +717,7 @@ class Gui(tkinter.Frame):
             try:
                 dBNotes = self.Lotus.GetDatabase("", path)
                 ac = dBNotes.AllDocuments.Count
-            except pywintypes.com_error as ex:
+            except pywintypes.com_error as ex: # pylint: disable=E1101
                 self.log(ErrorLevel.ERROR, _("Error connecting to Lotus !"))
                 self.log(ErrorLevel.ERROR, _("Exception %s :") % ex)
         else:
@@ -748,7 +772,7 @@ class Gui(tkinter.Frame):
                         self.log(ErrorLevel.ERROR, _("Can not convert message %d to MIME") % c)
                         if subject:
                             self.log(ErrorLevel.ERROR, _("#### Subject : %s") % subject.Text)
-                except (pywintypes.com_error, OSError) as ex:
+                except (pywintypes.com_error, OSError) as ex: # pylint: disable=E1101
                     e += 1
                     self.log(ErrorLevel.ERROR, _("Exception converting message %d to MIME : %s") %
                              (c, ex))
@@ -776,7 +800,7 @@ class Gui(tkinter.Frame):
             mbox = os.path.join(self.destPath, (dest + ".mbox"))
             self.log(ErrorLevel.NORMAL, _("Opening MBOX file - %s") % mbox)
             f = open(mbox, "wb")
-        elif self.Format.get() == Format.PST and not self.EML2PST :
+        elif self.Format.get() == Format.PST and not self.EML2PST:
             pst = os.path.join(self.destPath, (dest + ".pst"))
 
             # Can't guarantee that MAPISVC.INF contains the service "MSPST MS" and so
@@ -784,7 +808,7 @@ class Gui(tkinter.Frame):
             # Object Model is used, and it would be great to get rid of it.
             try:
                 Outlook = win32com.client.Dispatch(r'Outlook.Application')
-            except pywintypes.com_error as ex:
+            except pywintypes.com_error as ex: # pylint: disable=E1101
                 self.log(ErrorLevel.ERROR, _("Could not connect to Outlook !"))
                 self.log(ErrorLevel.ERROR, _("Exception %s :") % ex)
                 Outlook = None
@@ -816,11 +840,11 @@ class Gui(tkinter.Frame):
             if  not (fld.Name == "($Sent)" or fld.IsFolder) or fld.EntryCount <= 0:
                 if fld.EntryCount > 0:
                     if ph == 3:
-                        tl.title(_("Lotus Notes Converter - Phase 2/3 Export Message %d of %d (%.1f%%)") % 
-                                (c, ac, float(10.*(ac + 6.*c)/ac)))
+                        tl.title(_("Lotus Notes Converter - Phase 2/3 Export Message %d of %d (%.1f%%)") %
+                                 (c, ac, float(10.*(ac + 6.*c)/ac)))
                     else:
-                        tl.title(_("Lotus Notes Converter - Phase 2/2 Import Message %d of %d (%.1f%%)") % 
-                                (c, ac, float(10.*(ac + 9.*c)/ac)))
+                        tl.title(_("Lotus Notes Converter - Phase 2/2 Import Message %d of %d (%.1f%%)") %
+                                 (c, ac, float(10.*(ac + 9.*c)/ac)))
                     self.update()
                 if not self.running:
                     return False
@@ -843,7 +867,7 @@ class Gui(tkinter.Frame):
                     self.log(ErrorLevel.ERROR, _("Can not create directory %s") % path)
                     self.log(ErrorLevel.ERROR, "%s :" % ex)
                     continue
-            elif self.Format.get() == Format.PST and not self.EML2PST :
+            elif self.Format.get() == Format.PST and not self.EML2PST:
                 if fld.Name == "($Sent)":
                     pstfld = MAPIrootFolder.CreateSubFolder(_("Sent"))
                 elif fld.Name == "($Inbox)":
@@ -883,15 +907,15 @@ class Gui(tkinter.Frame):
 
                 try:
                     eml = None
-                    
-                    if doc.GetFirstItem("Body") == None and doc.GetFirstItem("Body") == None:
+
+                    if doc.GetFirstItem("Body") is None and doc.GetFirstItem("Body") is None:
                         # This allows the export of message that contain no
                         # body, as the subject, date and recipients contain
                         # useful information
                         self.log(ErrorLevel.INFO, _("Creating Body in message %d") % c)
                         doc.CreateMIMEEntity()
 
-                    if doc.GetMIMEEntity("Body") == None:
+                    if doc.GetMIMEEntity("Body") is None:
                         subject = doc.GetFirstItem("Subject")
                         form = doc.GetFirstItem("Form")
                         if not form:
@@ -906,7 +930,7 @@ class Gui(tkinter.Frame):
                         else:
                             body = doc.GetFirstItem("Body")
                             if not body or body.ValueLength <= 0:
-                                # This shouldn't be possible after creation of body above 
+                                # This shouldn't be possible after creation of body above
                                 errlvl = ErrorLevel.WARN
                                 empty = True
                             else:
@@ -937,7 +961,7 @@ class Gui(tkinter.Frame):
                                     eml = os.path.join(self.destPath, dest, fld.Name,
                                                        (str(d) + ".eml"))
 
-                                # Need to treat as binary so that windows doesn't convert 
+                                # Need to treat as binary so that windows doesn't convert
                                 # \n\r to \n\n\r
                                 f = open(eml, "wb")
                             elif self.Format.get() == Format.PST and not self.EML2PST:
@@ -960,7 +984,7 @@ class Gui(tkinter.Frame):
                         else:
                             raise NameError(_("Can not write Lotus MIME message to a file"))
 
-                except (pywintypes.com_error, OSError) as ex:
+                except (pywintypes.com_error, OSError) as ex: # pylint: disable=E1101
                     e += 1 #count the exceptions
                     if self.Format.get() != Format.MBOX:
                         # File might already be closed and/or removed. So failure is ok
@@ -989,9 +1013,9 @@ class Gui(tkinter.Frame):
 
                     if (c % 20) == 0:
                         if ph == 3:
-                            tl.title(_("Lotus Notes Converter - Phase 2/3 Export Message %d of %d (%.1f%%)") % 
-                                    (c, ac, float(10.*(ac + 6.*c)/ac)))
-                        else:                        
+                            tl.title(_("Lotus Notes Converter - Phase 2/3 Export Message %d of %d (%.1f%%)") %
+                                     (c, ac, float(10.*(ac + 6.*c)/ac)))
+                        else:
                             tl.title(_("Lotus Notes Converter - Phase 2/2 Import Message %d of %d (%.1f%%)") % (c, ac, float(10.*(ac + 9.*c)/ac)))
                         self.update()
 
@@ -1000,27 +1024,27 @@ class Gui(tkinter.Frame):
 
         # If need to call EML2PST helper function run Phase 3
         if self.Format.get() == Format.PST and self.EML2PST:
-            self.log(ErrorLevel.NORMAL,_("Starting importation of EML files into PST file"))
+            self.log(ErrorLevel.NORMAL, _("Starting importation of EML files into PST file"))
             # Force Popen to not create a CMD windows. Don't use "Shell=True" as although
-            # not a security risk here (the user of NSF2X already has console access), but 
+            # not a security risk here (the user of NSF2X already has console access), but
             # its use is discouraged.
             CREATE_NO_WINDOW = 0x08000000
             process = subprocess.Popen([self.EML2PST,
-                                        os.path.join(self.destPath, dest), 
+                                        os.path.join(self.destPath, dest),
                                         os.path.join(self.destPath, (dest + ".pst"))],
                                        stdout=subprocess.PIPE,
                                        stderr=subprocess.PIPE,
                                        universal_newlines=True,
                                        creationflags=CREATE_NO_WINDOW)
-            
+
             terminating = False
             while process.returncode is None:
-                if not terminating:    
+                if not terminating:
                     # handle output by direct access to stdout and stderr
                     for line in process.stdout:
                         if line.endswith('\n'):
                             line = line[:-1]
-    
+
                         # Interpret the stdout line, allowing for translated strings
                         if line[:18] == "Importing message ":
                             c = int(line[18:])
@@ -1032,15 +1056,15 @@ class Gui(tkinter.Frame):
                             self.log(ErrorLevel.NORMAL, _("Importing EML files in %s") % line[19:])
                         else:
                             self.log(ErrorLevel.NORMAL, line)
-                            
+
                         if not self.running:
                             # Interrupt the importation process
-                            process.terminate()   
+                            process.terminate()
                             terminating = True
-                    
+
                 # set returncode if the process has exited
                 process.poll()
-            
+
             # Check if helper function quit with an error
             if process.returncode:
                 if not terminating:
@@ -1052,9 +1076,9 @@ class Gui(tkinter.Frame):
                 self.log(ErrorLevel.ERROR, _("Importation of EML files into PST is incomplete"))
 
             # Remove the EML files and the directory structure
-            self.log(ErrorLevel.NORMAL,_("Removing temporary EML files"))
+            self.log(ErrorLevel.NORMAL, _("Removing temporary EML files"))
             shutil.rmtree(os.path.join(self.destPath, dest))
-                
+
         # Alert user if there were too many exceptions
         if e == nex:
             self.log(ErrorLevel.ERROR, _("Too many exceptions during mail importation. Stopping"))
@@ -1063,14 +1087,15 @@ class Gui(tkinter.Frame):
             f.close()
         self.log(ErrorLevel.NORMAL, _("Finished populating : %s") % dest)
         self.log(ErrorLevel.NORMAL, _("Exceptions: %d ... Documents OK : %d Untreated : %d\n") %
-                                     (e, c - e, max(0, ac - c)))
+                 (e, c - e, max(0, ac - c)))
 
         return True
 
     def ConvertToMIME(self, doc, _NotesEntries):
+        """Method to Convert NotesItem to MIME internally to the NSF file"""
         # Check if NoteID is empty before continuing and give more informative
         # error message
-        if doc.NoteID == None or doc.NoteID == '':
+        if doc.NoteID is None or doc.NoteID == '':
             self.log(ErrorLevel.ERROR, _("Notes message has empty NoteID"))
             return False
 
@@ -1102,16 +1127,16 @@ class Gui(tkinter.Frame):
                     # if the note is encrypted, try to decrypt it. If that fails
                     #(e.g., we don't have the key), then we can't convert to MIME
                     # (we don't care about the signature)
-                    isSignedSealed, isSigned, isSealed = _NotesEntries.NSFNoteIsSignedOrSealed(hNote)
+                    dummy, isSigned, isSealed = _NotesEntries.NSFNoteIsSignedOrSealed(hNote)
                     if isSealed:
                         self.log(ErrorLevel.INFO, _("Document note id 0x%s is encrypted.") %
                                  doc.NoteID)
                         DECRYPT_ATTACHMENTS_IN_PLACE = ctypes.c_uint16(1)
                         stat = _NotesEntries.NSFNoteDecrypt(hNote, DECRYPT_ATTACHMENTS_IN_PLACE)
-                        
+
                         if stat != 0:
                             self.log(ErrorLevel.ERROR, _("Document note id 0x%s is encrypted, cannot be converted.") % doc.NoteID)
-                                                                                    
+
                     if isSigned:
                         self.log(ErrorLevel.INFO, _("Document note id 0x%s is signed") %
                                  doc.NoteID)
@@ -1120,7 +1145,8 @@ class Gui(tkinter.Frame):
                     if not _NotesEntries.NSFNoteHasMIMEPart(hNote):
                         stat, hCC = _NotesEntries.MMCreateConvControls()
                         if stat == 0:
-                            _NotesEntries.MMSetMessageContentEncoding(hCC, 2) # html w/images & attachments
+                             # 2 = html w/images & attachments
+                            _NotesEntries.MMSetMessageContentEncoding(hCC, 2)
 
                             # NOTE_FLAG_CANONICAL = 0x4000 see nsfnote.h
                             _NOTE_FLAGS = ctypes.c_uint16(7)
@@ -1161,6 +1187,7 @@ class Gui(tkinter.Frame):
         return stat == 0
 
     def WriteMIMEHeader(self, f, mime):
+        """Method to write MIME headers to EML file"""
         if mime != None:
             headers = mime.Headers
             encoding = mime.Encoding
@@ -1276,7 +1303,7 @@ class Gui(tkinter.Frame):
                     self.WriteMIMEChildren(f_mime, mime, True)
                 else:
                     enc = doc.GetFirstItem("Encrypt")
-                    if enc != None and enc.Text == '1': 
+                    if enc != None and enc.Text == '1':
                         # See https://msdn.microsoft.com/en-us/library/windows/desktop/aa382376(v=vs.85).aspx
                         # Note that the PROV_RSA_AES provider supplies RC2, RC4 and
                         # AES encryption whereas as the PROV_RSA_FULL provider only
@@ -1289,6 +1316,7 @@ class Gui(tkinter.Frame):
                             # associated with PROV_RSA_AES
                             for prov in (win32cryptcon.MS_ENH_RSA_AES_PROV, None):
                                 try:
+                                    # pylint: disable=E1101
                                     self.hCryptoProv = win32crypt.CryptAcquireContext(None, prov, win32cryptcon.PROV_RSA_AES, win32cryptcon.CRYPT_SILENT)
                                     break
                                 except OSError as ex:
@@ -1306,16 +1334,18 @@ class Gui(tkinter.Frame):
                                              win32cryptcon.MS_STRONG_PROV,
                                              win32cryptcon.MS_DEF_PROV, None):
                                     try:
+                                        # pylint: disable=E1101
                                         self.hCryptoProv = win32crypt.CryptAcquireContext(None, prov, win32cryptcon.PROV_RSA_FULL, win32cryptcon.CRYPT_SILENT)
                                         break
                                     except OSError as ex:
                                         self.log(ErrorLevel.ERROR, _("Exception : %s"), ex)
 
                             if not self.hCryptoProv:
-                                self.log(ErrorLevel.ERROR, 
+                                self.log(ErrorLevel.ERROR,
                                          _("Can not open Windows cryptographic provider"))
 
                         if self.hCryptoProv and not self.certificate:
+                            # pylint: disable=E1101
                             hstorehandle = win32crypt.CertOpenSystemStore("MY", self.hCryptoProv)
 
                             for cert in hstorehandle.CertEnumCertificatesInStore():
@@ -1369,6 +1399,7 @@ class Gui(tkinter.Frame):
                             encryptparams = {"MsgEncodingType" : encodingtype, "CryptProv" :
                                              self.hCryptoProv, "ContentEncryptionAlgorithm" :
                                              encryptalgorithm}
+                            # pylint: disable=E1101
                             blob = win32crypt.CryptEncryptMessage(encryptparams,
                                                                   [self.certificate],
                                                                   f_smime.getvalue())
