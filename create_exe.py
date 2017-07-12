@@ -35,10 +35,10 @@ class Target(object):
 
         # the VersionInfo resource, uncomment and fill in those items
         # that make sense:
-        
+
         # The 'version' attribute MUST be defined, otherwise no versioninfo will be built:
         # self.version = "1.0"
-        
+
         # self.company_name = "Company Name"
         # self.copyright = "Copyright Company Name © 2013"
         # self.legal_copyright = "Copyright Company Name © 2013"
@@ -71,7 +71,7 @@ def which(program):
                 return exe_file
 
     return None
- 
+
 def find_all_files_in_dir(directory):
     ret = []
     for root, dir, files in os.walk(directory) :
@@ -81,20 +81,20 @@ def find_all_files_in_dir(directory):
         if _files :
             ret += [(root, _files)]
     return ret
-    
+
 def main () :
     if platform.architecture()[0] == "32bit":
         bitness = 'x86'
     else :
         bitness = 'amd64'
-        
+
     RT_BITMAP = 2
     RT_MANIFEST = 24
 
-    version = "1.3.1"
+    version = "1.3.3"
     author = "dbateman@free.fr"
     description="NSF2X - Converts Lotus NSF files to EML, MBOX or PST files..."
-    
+
     # A manifest which specifies the executionlevel
     # and windows common-controls library version 6
 
@@ -212,19 +212,19 @@ def main () :
 
           # windows subsystem executables (no console)
           windows=[nsf2x],
-          
+
           # version of the program
           version=version,
-          
+
           # short description of the program
           description=description,
-          
+
           # author contact details
           author=author,
           url='mailto:' + author,
-          
+
           # data files to include
-          data_files=[(".", ("README.txt", "LICENSE")), 
+          data_files=[(".", ("README.txt", "LICENSE")),
                       ("src", ("create_exe.py", "create_helper.py", "eml2pst.py",
                                "nsf2x.py", "mapiex.py", "testmapiex.py",
                                "nsf2x.nsi", "nsf2x_lang.nsi", "README.dev"))] +
@@ -236,7 +236,7 @@ def main () :
           zipfile=None,
           options={"py2exe": py2exe_options},
           )
-    
+
     zf = zipfile.ZipFile("nsf2x-" + version + "-" + bitness + ".zip", "w", zipfile.ZIP_DEFLATED)
     for root, dir, files in os.walk("dist") :
         for file in files :
@@ -253,8 +253,8 @@ def main () :
         raise "Can not find NSIS executable on your path"
     subprocess.call([makensis, "-DVERSION=" + version, "-DPUBLISHER=" + author,
                      "-DBITNESS=" + bitness, "nsf2x.nsi"])
-    
+
 if len(sys.argv) == 1:
     sys.argv.append("py2exe")
-    
+
 main()

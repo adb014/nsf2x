@@ -29,7 +29,7 @@ Quick Start
 WARNING
 -------
 NSF2X can read all the encrypted mails that your Notes ID gives you access to. It
-decrypts these mail in its output EML, and MBOX files, as NSF2X can't use the
+can decrypt these mail in its output EML, and MBOX files, as NSF2X can't use the
 Notes encryption in the EML files. So if you care about the security of your mail
 archives, store them on encrypted disks after conversion. You've been warned.
 However, a mail that is encrypted in Notes can be re-encrypted with the users 
@@ -306,8 +306,8 @@ Details
    as long as the NSF and PST files are in locations that NSF2X can access
    with the screen locked
    
-   14. Treat any exceptions manually
-   ---------------------------------
+  14. Treat any exceptions manually
+  ---------------------------------
    Some mails in Lotus notes might be malformed and not capable of being
    transformed into MIME by Lotus. It is also possible that an unexpected
    error might occur. Hopefully, this will be very rare or not occur at all,

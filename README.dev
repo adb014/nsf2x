@@ -54,7 +54,7 @@ Development
    Open the Winpython control panel for the 32bit version
          Hit the "register" button
          SET PATH=%PATH%;c:\Python32
-         python create_exe.py
+         python create_helper.py
          # The helper32 directory with the eml2pst application is built
          
    Reopen the Winpython control panel for the 32bit version
@@ -63,7 +63,7 @@ Development
    Open the Winpython control panel for the 64bit version
          Hit the "register" button
          SET PATH=%PATH%;c:\Python64
-         python create_exe.py 
+         python create_helper.py 
    
    Reopen the Winpython control panel for the 64bit version
          Hit the "unregister" button
@@ -76,7 +76,7 @@ Development
          python create_exe.py
 
    The sub-directory 'dist' now contains the binary distribution, and the
-   files "nsf2x-X.X.X.zip"  and "nsf2x-1.2.7-setup.exe" contains a zip
+   files "nsf2x-V.V.V.zip"  and "nsf2x-V.V.V-XX-setup.exe" contains a zip
    and installer of this directory for distribution.
    
    create_exe.py attempts to include all DLLs that are necessary of the use of
@@ -265,7 +265,7 @@ Development
    address book to have the certificates for all the senders and recipients of 
    encrypted mails. These certificates can be in the form of a local contact
    or the "Global Address List" of the Exchange server. Otherwise NSF2X
-   will cause Outlook to present the user is a dialog asking them how to
+   will cause Outlook to present the user with a dialog asking them how to
    treat the missing certificate, with no way to automate the selection of
    the correct option, as NSF2X is blocked by the dialog.
    
@@ -318,10 +318,9 @@ Development
    
    The messages of an MBOX file are recognized by the fact they start with
    "\nFrom". That is each new message is separated by a newline character
-   and the From field is the first field of the header. The EML files are
-   written with the From field first to simplify this. As "\nFrom" might
+   and the From field is the first field of the header. As "\nFrom" might
    appear in a real message, the use of MIME ensures that these uses of
-   "\nFrom" won't be incorrectly interpreted.
+   "\nFrom" won't be incorrectly interpreted as they'll be base64 encoded.
 
 See also
 --------

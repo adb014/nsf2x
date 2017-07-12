@@ -986,7 +986,7 @@ class Gui(tkinter.Frame):
 
                 except (pywintypes.com_error, OSError) as ex: # pylint: disable=E1101
                     e += 1 #count the exceptions
-                    if self.Format.get() != Format.MBOX:
+                    if eml != None and self.Format.get() != Format.MBOX:
                         # File might already be closed and/or removed. So failure is ok
                         try:
                             f.close()
