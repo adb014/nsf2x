@@ -13,16 +13,6 @@
 !define DEFAULTNORMALDESTINATON "$ProgramFiles\${NAME}-${VERSION}-${BITNESS}"
 !define DEFAULTPORTABLEDESTINATON "$LocalAppdata\Programs\${NAME}-${VERSION}-${BITNESS}"
 
-!define CLSID_IConverterSession "{4E3A7680-B77A-11D0-9DA5-00C04FD65685}"
-!define CLSID_IMimeMessage "{9EADBD1A-447B-4240-A9DD-73FE7C53A981}"
-
-# Alternative locations of different versions of ClickToRun Office
-# If new values are added here, the logic of the ForEach loop 
-# below needs to be changed (NSIS doesn't have arrays or lists)
-!define OfficeXXClickToRun "Software\Microsoft\Office\ClickToRun\Registry\MACHINE\Software\Classes"
-!define Office15ClickToRun "Software\Microsoft\Office\15.0\ClickToRun\Registry\MACHINE\Software\Classes"
-!define Office16ClickToRun "Software\Microsoft\Office\16.0\ClickToRun\Registry\MACHINE\Software\Classes"
-
 ; Keep NSIS v3.0 Happy
 Unicode true
 ManifestDPIAware true
@@ -38,10 +28,6 @@ Var InstallAllUsers
 Var InstallAllUsersCtrl
 Var InstallShortcuts
 Var InstallShortcutsCtrl
-Var ClickToRun
-Var OfficeClickToRun
-Var ClickToRunDestination
-Var i
 
 !include LogicLib.nsh
 !include FileFunc.nsh
@@ -105,72 +91,6 @@ ${If} $InstDir == ""
     StrCpy $InstDir $0
 ${EndIf}
 Call SetModeDestinationFromInstdir
-FunctionEnd
-
-Function CheckClickToRun
-StrCpy $ClickToRun ""
-StrCpy $ClickToRunDestination ""
-
-# No arrays or lists in NSIS, so use a bit of messy logic to choose
-# potential registry locations of ClickToRun installs
-
-${ForEach} $i 1 3 + 1
-    ${If} $i == "1"
-        StrCpy $OfficeClickToRun ${OfficeXXClickToRun}
-    ${ElseIf} $i == "2"
-        StrCpy $OfficeClickToRun ${Office16ClickToRun}
-    ${ElseIf} $i == "3"
-        StrCpy $OfficeClickToRun ${Office15ClickToRun}
-    ${EndIf}
-    
-    ReadRegStr $R1 HKLM "$OfficeClickToRun\Wow6432Node\CLSID\${CLSID_IConverterSession}" ""
-    ${If} $R1 != ""
-        ; Have Click To Run with different bitness
-        StrCpy $ClickToRun "$OfficeClickToRun\Wow6432Node\CLSID"
-        StrCpy $ClickToRunDestination "Software\Classes\Wow6432Node\CLSID"
-        ${Break}
-    ${EndIf} 
-
-    ReadRegStr $R2 HKLM "$OfficeClickToRun\CLSID\${CLSID_IConverterSession}" ""
-    ${If} $R2 != ""
-        ; Have Click To Run with same bitness
-        StrCpy $ClickToRun "$OfficeClickToRun\CLSID"
-        StrCpy $ClickToRunDestination "Software\Classes\CLSID"
-        ${Break}
-    ${EndIf}
-${Next}
-
-# Check if registry is already patched.
-ReadRegStr $R0 HKLM "$ClickToRunDestination\${CLSID_IConverterSession}" ""
-${If} $R0 != ""
-    StrCpy $ClickToRun ""
-    StrCpy $ClickToRunDestination ""
-${EndIf}
-
-${If} $ClickToRun != ""
-    MessageBox MB_YESNOCANCEL|MB_TOPMOST|MB_ICONEXCLAMATION "$(HAVE_CLICKTORUN)" IDYES Yes IDNO No
-    ; Only get here if the cancel button was pressed
-    Quit
-    
-    Yes:
-    ${registry::CopyKey} "HKLM\$ClickToRun\${CLSID_IConverterSession}" "HKLM\$ClickToRunDestination\${CLSID_IConverterSession}" $R0
-    ${If} $R0 != 0
-        MessageBox MB_OK|MB_ICONEXCLAMATION "$(FAIL_COPY_ICONV)"
-        Quit
-    ${EndIf}
-    ${registry::CopyKey} "HKLM\$ClickToRun\${CLSID_IMimeMessage}" "HKLM\$ClickToRunDestination\${CLSID_IMimeMessage}" $R0
-    ${If} $R0 != 0
-        MessageBox MB_OK|MB_ICONEXCLAMATION "$(FAIL_COPY_MIME)"
-        Quit
-    ${EndIf}
-
-    Goto Finished
-    No:
-    ; Do nothing. PST conversion won't work 
-    StrCpy $ClickToRun ""
-    StrCpy $ClickToRunDestination ""
-    Finished:
-${EndIf}
 FunctionEnd
 
 Function RequireAdmin
@@ -250,7 +170,6 @@ ${If} $R0 != ""
     ${EndIf}
 ${EndIf}
 
-Call CheckClickToRun
 FunctionEnd
 
 Section "Install"
@@ -260,8 +179,6 @@ File /r dist\*
 WriteRegStr SHCTX "Software\Microsoft\Windows\CurrentVersion\Uninstall\${UNINSTKEY}" "DisplayName" "${NAME}"
 WriteRegStr SHCTX "Software\Microsoft\Windows\CurrentVersion\Uninstall\${UNINSTKEY}" "DisplayVersion" "${VERSION}"
 WriteRegStr SHCTX "Software\Microsoft\Windows\CurrentVersion\Uninstall\${UNINSTKEY}" "Publisher" "${PUBLISHER}"
-WriteRegStr SHCTX "Software\Microsoft\Windows\CurrentVersion\Uninstall\${UNINSTKEY}" "ClickToRun" $ClickToRun
-WriteRegStr SHCTX "Software\Microsoft\Windows\CurrentVersion\Uninstall\${UNINSTKEY}" "ClickToRunDestination" $ClickToRunDestination
 ${If} $InstallAllUsers  == ${BST_CHECKED}
     WriteRegStr SHCTX "Software\Microsoft\Windows\CurrentVersion\Uninstall\${UNINSTKEY}" "UninstallString" '"$InstDir\uninstall.exe" /ALL'
 ${Else}
@@ -322,18 +239,6 @@ ${EndIf}
 FunctionEnd
 
 Section "Uninstall"
-ReadRegStr $R0 SHCTX "Software\Microsoft\Windows\CurrentVersion\Uninstall\${UNINSTKEY}" "ClickToRun"
-${If} $R0 != ""
-    MessageBox MB_YESNOCANCEL "$(UNINSTALL_REGISTRY)" IDYES Yes2 IDNO No2
-    Quit
-    Yes2:
-    ReadRegStr $R1 SHCTX "Software\Microsoft\Windows\CurrentVersion\Uninstall\${UNINSTKEY}" "ClickToRunDestination"
-    ${If} $R1 != ""
-        DeleteRegKey HKLM "$R1\${CLSID_IConverterSession}"
-        DeleteRegKey HKLM "$R1\${CLSID_IMimeMessage}"   
-    ${EndIf}
-    No2:
-${EndIf}
 DeleteRegKey SHCTX "Software\Microsoft\Windows\CurrentVersion\Uninstall\${UNINSTKEY}"
 
 RMDir /r "$SMPROGRAMS\${NAME}-${VERSION}"
