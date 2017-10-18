@@ -26,8 +26,12 @@ import win32com.mapi.mapi
 import win32com.mapi.mapitags
 from win32com.client import pythoncom
 from win32com.server import util
-import pywintypes
-import ctypes 
+
+import ctypes
+import platform
+import winreg
+import uuid 
+import sys
 
 class mapiobject (object) :
     def __init__ (self, mapi, item = None) :
@@ -84,10 +88,8 @@ class mapimessage (mapiobject) :
         return self.SetProperty (win32com.mapi.mapitags.PR_MESSAGE_FLAGS, flags)
         
     def ImportEML (self, eml) :            
-        f = open(eml, "rb")   
-        self.mapi.MimeToMapi(f, self.item, 0x20)
+        self.mapi.MimeToMapi(eml, self.item, win32com.mapi.mapi.CCSF_SMTP | win32com.mapi.mapi.CCSF_INCLUDE_BCC)
         self.SetMessageFlags(self.MSGFLAG_READ)
-        f.close()
         
 class mapiappointment (mapiobject) :
     OUTLOOK_DATA2 = 0x00062002
@@ -164,7 +166,7 @@ class mapifolder (mapiobject) :
         
         if flds == []:
             # Return existing folder
-            return self.folder()
+            return self
             
         fld = flds[0]
         flds = flds[1:]
@@ -249,6 +251,45 @@ class mapifolder (mapiobject) :
         message.Save()
         return message
         
+# Redfine the win32com.util.FileStream class as with Outlook 2016 its passing me
+# a 64bit MAXINT value to ask the read the whole file and this will fail with a
+# overflow. Check for values exceeding maxint before reading from the file.
+# FIXME Check for versions of pywin more recent than 221 if this is still the case
+class FileStream:
+  _public_methods_ = [ 'Read', 'Write', 'Clone', 'CopyTo', 'Seek' ]
+  _com_interfaces_ = [ pythoncom.IID_IStream ]
+
+  def __init__(self, file):
+    self.file = file
+
+  def Read(self, amount):
+    if (amount >= sys.maxsize):
+        data=self.file.read()
+    else:
+        data=self.file.read(amount)      
+    return data
+
+  def Write(self, data):
+    self.file.write(data)
+    return len(data)
+
+  def Clone(self):
+    return self._wrap(self.__class__(self.file))
+
+  def CopyTo(self, dest, cb):
+    if (cb >= sys.maxsize):
+        data=self.file.read()
+    else:
+        data=self.file.read(cb)
+    cbread=len(data)
+    dest.Write(data)    ## ??? Write does not currently return the length ???
+    return cbread, cbread
+
+  def Seek(self, offset, origin):
+    # how convient that the 'origin' values are the same as the CRT :)
+    self.file.seek(offset, origin)
+    return self.file.tell()
+
 class mapi (object) :
     def __init__ (self, profilename = "") :
         # FIXME
@@ -307,18 +348,61 @@ class mapi (object) :
             pass
         return ""               
         
-    def MimeToMapi (self, mimestream, m, flag = 0) :
-        if self.converter == None :
-            ## CLSID_IConverterSession
-            clsid = pywintypes.IID('{4e3a7680-b77a-11d0-9da5-00c04fd65685}')
-            ## IID_IConverterSession
-            iid = pywintypes.IID('{4b401570-b77b-11d0-9da5-00c04fd65685}') 
+    def CoCreateInstanceC2R (self, store, reg, clsid, iid) :
+        # Ugly code to find DLL in C2R version of COM object and get a COM
+        # object despite the fact that COM doesn't handle C2R
+        try:
+            # Get DLL to load from 2R register 
+            aReg = winreg.ConnectRegistry(None, store)
+            aKey = winreg.OpenKey(aReg, reg, 0, winreg.KEY_READ | winreg.KEY_WOW64_64KEY)
+            dummy_n, IconvDLL, dummy_t = winreg.EnumValue(aKey, 0)
+            winreg.CloseKey(aKey)
+            winreg.CloseKey(aReg)
             
-            tmp = pythoncom.CoCreateInstance (clsid, None, pythoncom.CLSCTX_INPROC_SERVER, pythoncom.IID_IUnknown)
-            self.converter = tmp.QueryInterface (iid)
+            # Create OLE object from DLL
+            IconvOLE = ctypes.OleDLL(IconvDLL)
+            
+            # Get COM Instance from OLE 
+            clsid_class = uuid.UUID(str(clsid)).bytes_le
+            iclassfactory = uuid.UUID(str(pythoncom.IID_IClassFactory)).bytes_le
+            com_classfactory = ctypes.c_long(0)
+            IconvOLE.DllGetClassObject(clsid_class, iclassfactory, ctypes.byref(com_classfactory))
+            MyFactory = pythoncom.ObjectFromAddress(com_classfactory.value, pythoncom.IID_IClassFactory)
+            return MyFactory.CreateInstance (None, str(iid))
+        except:
+            return None
+        
+    def MimeToMapi (self, eml, m, flag = 0) :
+        if self.converter == None :
+            clsid = win32com.mapi.mapi.CLSID_IConverterSession
+            iid = win32com.mapi.mapi.IID_IConverterSession
+                        
+            try:
+                tmp = pythoncom.CoCreateInstance (clsid, None, pythoncom.CLSCTX_INPROC_SERVER, pythoncom.IID_IUnknown)
+                self.converter = tmp.QueryInterface (iid)
+                
+            except :
+                # Test for ClickToRun version of Outlook and manually load library and create instance
+                for iconvpath in ("", "16.0", "15.0") :
+                    regpath =  os.path.join ("Software","Microsoft","Office",iconvpath,"ClickToRun","Registry","Machine","Software","Classes")                     
+                    if platform.machine() == "AMD64" and platform.architecture()[0] == "32bit":
+                        # 32bit application on 64bit platform
+                        regpath = os.path.join (regpath,"Wow6432Node")
+                    regpath = os.path.join (regpath,"CLSID", str(clsid),"InprocServer32")
+                
+                    self.converter = self.CoCreateInstanceC2R (winreg.HKEY_LOCAL_MACHINE, regpath, clsid, iid)
+                    if self.converter != None :
+                        break
+                
+                if self.converter == None :
+                     NameError("mapi:MimeToMapi : Can not create IConverterSession instance")
+                            
+        # Open file as IStream. Don't use win32com.mapi.mapi.OpenStreamOnFile as it doesn't
+        # handle Unicode file names
+        f = open(eml, "rb")
+        Istrm = util.wrap (FileStream(f), pythoncom.IID_IUnknown, None, True)
 
-        Istrm = util.wrap (util.FileStream(mimestream), pythoncom.IID_IStream)
-        self.converter.MIMEToMAPI(Istrm, m, flag)        
+        self.converter.MIMEToMAPI(Istrm, m, flag)
         
     def _GetContents (self) :
         self.messagestorestable = self.session().GetMsgStoresTable(0)
