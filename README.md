@@ -1,6 +1,7 @@
 # NSF2X
 A Lotus Notes NSF to EML, MBOX and Outlook PST converter by [dbateman@free.fr](dbateman@free.fr) based on [nlconverter](https://code.google.com/p/nlconverter/) by [Hugues Bernard](hugues.bernard@gmail.com).
 The code is written in Python, but compiled versions are available for users that do not want to install Python. 
+
 ---
 NSF2X relies on the Windows COM interface to Lotus Notes for the conversion to EML and MBOX formats. For the PST format it relies on the COM interface to Outlook and the Windows MAPI API. For this reason NSF2X is a Windows only program and the user must have Lotus Notes installed, and optionally Outlook for the conversion to the PST format.
 
