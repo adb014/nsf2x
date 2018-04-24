@@ -64,14 +64,13 @@ Pressing this button opens the connection to Lotus Notes via a Windows COM inter
 
 ### Select the output type: EML, MBOX or PST
 NSF2X can convert to EML, MBOX or PST formats. For each NSF file found in the source directory NSF2X does the following steps
-### #EML
+#### EML
 For each NSF a sub-directory "<DestPath>/<NSFFileBasename>" is created. where <NSFFileBasename> is the NSF file with the `.nsf` termination
 removed. Under these sub-directories, the folder hierarchy of the NSF file is recreated and each message of each folder is created in a separate EML file.
-### #MBOX
+#### MBOX
 There are two possibles means of treating the conversion of MBOX files In the first case, for each NSF file an MBOX file is created in <DestPath>, with the ".nsf" termination replaced with ".mbox". Unfortunately the folder hierarchy is thrown away in the created MBOX file, and a flat hierarchy is used. The advantage is only a single MBOX file is created for each NSF file.
-
 In the second case a folder hierarchy is created with an MBOX representing each NSF sub-directory, thus retaining the folder hierarchy. The downside is a large number of MBOX files is potentially created.
-### #PST
+#### PST
 For each NSF file a PST file is created in <DestPath>, with the ".nsf" termination replaced with ".pst". The folder hierarchy in the NSF file is recreated in the PST file. Each message from the NSF file is saved to a temporary file in <DestPath> and then opened by Outlook and moved to the correct folder. At the end of the process the PST file is left open within Outlook. You can either close these PST files before moving them to their final location and reopen them in Outlook or create them directly in their final location. If you run NSF2X twice with the same source and destination, the messages in the NSF file will be copied to the PST files twice.
 
 ### Modify the conversion options as wanted
@@ -135,9 +134,7 @@ For large NSF file you're better off going and getting a coffee or going to bed.
 ### Treat any exceptions manually
 Some mails in Lotus notes might be malformed and not capable of being transformed into MIME by Lotus. It is also possible that an unexpected error might occur. Hopefully, this will be very rare or not occur at all, but if it does the output of NSF2X will tell the user the number of exceptions of this type at the end of its execution of each NSF file. The number of "untreated" documents are messages that NSF2X knows are not mails and are not treated (for example delivery failure reports, replies to "Appointments", etc)
 
-The messages that weren't transferred from Lotus will have their subjects printed to the log window with the prefix
-
-### #Subject :  ...
+The messages that weren't transferred from Lotus will have their subjects printed to the log window with the prefix `Subject :  ...`
 
 This can be used to identify the untransferred messages in the Lotus NSF interface. Don't despair these messages are not lost and can be transferred manually.
 
