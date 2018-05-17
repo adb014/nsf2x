@@ -751,15 +751,25 @@ class Gui(tkinter.Frame):
 
         self.log(ErrorLevel.NORMAL, _("Starting MIME encoding of messages"))
         for fld in dBNotes.Views:
-            if  not (fld.Name == "($Sent)" or fld.IsFolder) or fld.EntryCount <= 0:
-                if fld.EntryCount > 0:
-                    tl.title(_("Lotus Notes Converter - Phase 1/%d Converting MIME (%.1f%%)") %
-                             (ph, float(10.*c/ac)))
-                    self.update()
+            try:
+                # If the NSF file is from an older version of Lotus the View might be invalid.
+                # So in case of an error here, warn the user and continue, rather than raising
+                # an error
+                if  not (fld.Name == "($Sent)" or fld.IsFolder) or fld.EntryCount <= 0:
+                    if fld.EntryCount > 0:
+                        tl.title(_("Lotus Notes Converter - Phase 1/%d Converting MIME (%.1f%%)") %
+                                 (ph, float(10.*c/ac)))
+                        self.update()
+                    if not self.running:
+                        return False
+                    continue
+                doc = fld.GetFirstDocument()
+            except:
+                # FIXME : Can I ensure that fld.Name is always valid ?
+                self.log(ErrorLevel.WARN, _("Invalid View '%s' in NSF file. Skipping") % fld.Name)
                 if not self.running:
                     return False
                 continue
-            doc = fld.GetFirstDocument()
 
             while doc and (nex < 0 or e < nex): #stop after XXX exceptions...
                 if not self.running:
@@ -837,18 +847,29 @@ class Gui(tkinter.Frame):
         c = 0
         e = 0
         for fld in dBNotes.Views:
-            if  not (fld.Name == "($Sent)" or fld.IsFolder) or fld.EntryCount <= 0:
-                if fld.EntryCount > 0:
-                    if ph == 3:
-                        tl.title(_("Lotus Notes Converter - Phase 2/3 Export Message %d of %d (%.1f%%)") %
-                                 (c, ac, float(10.*(ac + 6.*c)/ac)))
-                    else:
-                        tl.title(_("Lotus Notes Converter - Phase 2/2 Import Message %d of %d (%.1f%%)") %
-                                 (c, ac, float(10.*(ac + 9.*c)/ac)))
-                    self.update()
+            try:
+                # If the NSF file is from an older version of Lotus the View might be invalid.
+                # So in case of an error here, warn the user and continue, rather than raising
+                # an error
+                if  not (fld.Name == "($Sent)" or fld.IsFolder) or fld.EntryCount <= 0:
+                    if fld.EntryCount > 0:
+                        if ph == 3:
+                            tl.title(_("Lotus Notes Converter - Phase 2/3 Export Message %d of %d (%.1f%%)") %
+                                     (c, ac, float(10.*(ac + 6.*c)/ac)))
+                        else:
+                            tl.title(_("Lotus Notes Converter - Phase 2/2 Import Message %d of %d (%.1f%%)") %
+                                     (c, ac, float(10.*(ac + 9.*c)/ac)))
+                        self.update()
+                    if not self.running:
+                        return False
+                    continue
+            except:
+                # FIXME : Can I ensure that fld.Name is always valid ?
+                self.log(ErrorLevel.WARN, _("Invalid View '%s' in NSF file. Skipping") % fld.Name)
                 if not self.running:
                     return False
                 continue
+
 
             pstfld = None
             if self.Format.get() == Format.EML or (self.Format.get() == Format.PST
@@ -908,7 +929,7 @@ class Gui(tkinter.Frame):
                 try:
                     eml = None
 
-                    if doc.GetFirstItem("Body") is None and doc.GetFirstItem("Body") is None:
+                    if doc.GetFirstItem("Body") is None:
                         # This allows the export of message that contain no
                         # body, as the subject, date and recipients contain
                         # useful information
