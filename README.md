@@ -1,7 +1,5 @@
 # NSF2X
-A Lotus Notes NSF to EML, MBOX and Outlook PST converter by [dbateman@free.fr](dbateman@free.fr) based on [nlconverter](https://code.google.com/p/nlconverter/) by [Hugues Bernard](hugues.bernard@gmail.com).
-The code is written in Python, but compiled versions are available for users that do not want to install Python. 
-
+A Lotus Notes NSF to EML, MBOX and Outlook PST converter by [David Bateman](dbateman@free.fr) based on [nlconverter](https://code.google.com/p/nlconverter/) by [Hugues Bernard](hugues.bernard@gmail.com). The code is written in Python, but compiled versions are available for users that do not want to install Python.
 ---
 NSF2X relies on the Windows COM interface to Lotus Notes for the conversion to EML and MBOX formats. For the PST format it relies on the COM interface to Outlook and the Windows MAPI API. For this reason NSF2X is a Windows only program and the user must have Lotus Notes installed, and optionally Outlook for the conversion to the PST format.
 
@@ -96,7 +94,6 @@ This option only concerns the conversion to MBOX format. The possible options ar
 ### Treatment of encrypted Notes messages
 This option concerns all conversion types. The possible options are
   * None : The encryption status of all Notes mails is ignored and all mail is saved without encryption. This is useful if you can't export the user certificate from the Microsoft cryptographic store and therefore can't read encrypted EML and MBOX mails with your mail client.
-
   * RC2 40bit : Encrypt with the algorithm RC2-CBC with 40 bit. This algorithm is quite weak, but very portable. If you can avoid it you shouldn't use it
   * 3DES 168bit : Encrypt with DES EDE3 CBC or Triple DES with 168 bits. Some people consider this encryption as being fragile, but it offers a compromise of security and compatibility
   * AES 128 bit : Encrypt with a modern AES 128 bit encryption
