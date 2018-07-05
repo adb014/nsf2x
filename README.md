@@ -14,7 +14,7 @@ NSF2X relies on the Windows COM interface to Lotus Notes for the conversion to E
 
 You should select the version based on whether your version of Lotus Notes is 32 or 64 bit. For 32bit versions of Notes select the 'x86' version and for 64bit versions select the 'amd64' version.
 
-Download the latest installers from the [Releases](./releases/latest) section of the site!
+Download the latest installers from the [Releases](https://github.com/adb014/nsf2x/releases/latest) section of the site!
 For people wanting to modify NSF2X, development notes of NSF2X are available in the [README.dev](./README.dev) file.
 
 ## Quick Start
