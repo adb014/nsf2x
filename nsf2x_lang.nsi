@@ -38,7 +38,7 @@ LangString 	INSTALL_ADMIN		${LANG_German}	"Installation für alle Benutzer (erfo
 
 LangString 	INSTALL_SHORTCUT		${LANG_English}	"Create desktop shortcut"
 LangString 	INSTALL_SHORTCUT		${LANG_French}	"Créer un raccourci sur le bureau"
-LangString 	INSTALL_SHORTCUT		${LANG_German}	"Desktopverknüpfung erstellen
+LangString 	INSTALL_SHORTCUT		${LANG_German}	"Desktopverknüpfung erstellen"
 
 LangString 	ALREADY_INSTALLED		${LANG_English}	"NSF2X version ${VERSION} is already installed. Launch the uninstaller?"
 LangString 	ALREADY_INSTALLED		${LANG_French}	"La version ${VERSION} de NSF2X est déjà installé. Désinstaller?"
